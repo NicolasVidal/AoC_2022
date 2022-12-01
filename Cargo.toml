@@ -8,6 +8,11 @@ lto = true
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [[bench]]
+name = "j2"
+path = "src/bench_j2.rs"
+harness = false
+
+[[bench]]
 name = "j1"
 path = "src/bench_j1.rs"
 harness = false
