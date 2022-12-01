@@ -27,10 +27,14 @@ impl<T: Ord + Default + Copy, const N: usize> IntoIterator for Maximums<T, N> {
 
 impl<T: Ord + Default + Copy, const N: usize> Maximums<T, N> {
     fn update(&mut self, mut new_value: T) {
-        for item in self.bests.iter_mut() {
-            if new_value > *item {
-                std::mem::swap(&mut new_value, item);
+        let mut last_idx = 0;
+        for elt in self.bests.iter() {
+            if *elt < new_value {
+                last_idx += 1
             }
+        }
+        for elt in self.bests.as_mut_slice()[0..last_idx].iter_mut().rev() {
+            std::mem::swap(elt, &mut new_value);
         }
     }
     fn update_self(mut self, new_value: T) -> Self {
