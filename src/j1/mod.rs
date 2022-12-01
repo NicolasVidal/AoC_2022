@@ -1,16 +1,59 @@
+use std::array::IntoIter;
+use std::ops::Add;
 use std::str::FromStr;
 
 use itertools::Itertools;
 
+struct Maximums<T: Ord + Default + Copy, const N: usize> {
+    bests: [T; N],
+}
+
+impl<T: Ord + Default + Copy, const N: usize> Default for Maximums<T, N> {
+    fn default() -> Self {
+        Maximums::<T, N> {
+            bests: [T::default(); N],
+        }
+    }
+}
+
+impl<T: Ord + Default + Copy, const N: usize> IntoIterator for Maximums<T, N> {
+    type Item = T;
+    type IntoIter = IntoIter<T, N>;
+
+    fn into_iter(self) -> Self::IntoIter {
+        self.bests.into_iter()
+    }
+}
+
+impl<T: Ord + Default + Copy, const N: usize> Maximums<T, N> {
+    fn update(&mut self, mut new_value: T) {
+        for item in self.bests.iter_mut() {
+            if new_value > *item {
+                std::mem::swap(&mut new_value, item);
+            }
+        }
+    }
+    fn update_self(mut self, new_value: T) -> Self {
+        self.update(new_value);
+        self
+    }
+}
+
+fn compute_max_sums<T: Ord + Default + Copy + FromStr + Add<Output=T> + std::iter::Sum, const N: usize>(s: &str) -> T {
+    s.lines()
+        .batching(|it|
+            it.map_while(|line| T::from_str(line).ok())
+                .fold(None, |acc: Option<T>, value| acc.map(|prev_acc| prev_acc + value)
+                    .or(Some(value)))
+        )
+        .fold(Maximums::<T, N>::default(), |acc, new_value| acc.update_self(new_value))
+        .into_iter()
+        .sum()
+}
+
 #[allow(unused)]
 pub fn _p1(s: &str) -> usize {
-    s.lines()
-        .fold((usize::MIN, 0usize),
-              |(max, total), line|
-                  usize::from_str(line)
-                      .map(|value| (max.max(total), total + value))
-                      .unwrap_or((max.max(total), 0usize)))
-        .0
+    compute_max_sums::<u32, 1>(s) as usize
 }
 
 #[allow(unused)]
@@ -20,16 +63,7 @@ pub fn p1() -> usize {
 
 #[allow(unused)]
 pub fn _p2(s: &str) -> usize {
-    s.lines()
-        .batching(|it|
-            it.map_while(|line| usize::from_str(line).ok())
-                .fold(None, |acc: Option<usize>, value| acc.map(|prev_acc| prev_acc + value)
-                    .or(Some(value)))
-        )
-        .sorted()
-        .rev()
-        .take(3)
-        .sum()
+    compute_max_sums::<u32, 3>(s) as usize
 }
 
 #[allow(unused)]
@@ -38,16 +72,20 @@ pub fn p2() -> usize {
 }
 
 #[cfg(test)]
+#[allow(unused)]
 mod j1_tests {
+    #[allow(unused)]
     use super::*;
 
     #[test]
+    #[allow(unused)]
     fn test_p1() {
         assert_eq!(24000, _p1(include_str!("j1_test.txt")));
         assert_eq!(68775, _p1(include_str!("j1.txt")));
     }
 
     #[test]
+    #[allow(unused)]
     fn test_p2() {
         assert_eq!(45000, _p2(include_str!("j1_test.txt")));
         assert_eq!(202585, _p2(include_str!("j1.txt")));
