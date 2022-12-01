@@ -1,59 +1,26 @@
-use std::array::IntoIter;
-use std::ops::Add;
 use std::str::FromStr;
-
-use itertools::Itertools;
-
-struct Maximums<T: Ord + Default + Copy, const N: usize> {
-    bests: [T; N],
-}
-
-impl<T: Ord + Default + Copy, const N: usize> Default for Maximums<T, N> {
-    fn default() -> Self {
-        Maximums::<T, N> {
-            bests: [T::default(); N],
-        }
-    }
-}
-
-impl<T: Ord + Default + Copy, const N: usize> IntoIterator for Maximums<T, N> {
-    type Item = T;
-    type IntoIter = IntoIter<T, N>;
-
-    fn into_iter(self) -> Self::IntoIter {
-        self.bests.into_iter()
-    }
-}
-
-impl<T: Ord + Default + Copy, const N: usize> Maximums<T, N> {
-    fn update(&mut self, mut new_value: T) {
-        for item in self.bests.iter_mut() {
-            if new_value > *item {
-                std::mem::swap(&mut new_value, item);
-            }
-        }
-    }
-    fn update_self(mut self, new_value: T) -> Self {
-        self.update(new_value);
-        self
-    }
-}
-
-fn compute_max_sums<T: Ord + Default + Copy + FromStr + Add<Output=T> + std::iter::Sum, const N: usize>(s: &str) -> T {
-    s.lines()
-        .batching(|it|
-            it.map_while(|line| T::from_str(line).ok())
-                .fold(None, |acc: Option<T>, value| acc.map(|prev_acc| prev_acc + value)
-                    .or(Some(value)))
-        )
-        .fold(Maximums::<T, N>::default(), |acc, new_value| acc.update_self(new_value))
-        .into_iter()
-        .sum()
-}
 
 #[allow(unused)]
 pub fn _p1(s: &str) -> usize {
-    compute_max_sums::<u32, 1>(s) as usize
+    let mut tot = 0u32;
+    let mut max = 0u32;
+    for l in s.lines() {
+        match u32::from_str(l) {
+            Ok(num) => {
+                tot += num;
+            }
+            Err(_) => {
+                if tot > max {
+                    max = tot
+                }
+                tot = 0;
+            }
+        }
+    }
+    if tot > max {
+        max = tot
+    }
+    max as usize
 }
 
 #[allow(unused)]
@@ -63,7 +30,35 @@ pub fn p1() -> usize {
 
 #[allow(unused)]
 pub fn _p2(s: &str) -> usize {
-    compute_max_sums::<u32, 3>(s) as usize
+    let mut tot = 0u32;
+    let mut max = [0u32; 3];
+
+    for l in s.lines() {
+        match u32::from_str(l) {
+            Ok(num) => {
+                tot += num;
+            }
+            Err(_) => {
+                let mut last_idx = 0;
+
+                for elt in max.iter() {
+                    if *elt < tot {
+                        last_idx += 1
+                    }
+                }
+                for elt in max.as_mut_slice()[0..last_idx].iter_mut().rev() {
+                    std::mem::swap(elt, &mut tot);
+                }
+                tot = 0u32
+            }
+        }
+    }
+    for elt in max.iter_mut() {
+        if *elt < tot {
+            std::mem::swap(elt, &mut tot);
+        }
+    }
+    max.into_iter().sum::<u32>() as usize
 }
 
 #[allow(unused)]
