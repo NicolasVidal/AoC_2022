@@ -7,6 +7,12 @@ edition = "2021"
 lto = true
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
+
+[[bench]]
+name = "j3"
+path = "src/bench_j3.rs"
+harness = false
+
 [[bench]]
 name = "j2"
 path = "src/bench_j2.rs"
