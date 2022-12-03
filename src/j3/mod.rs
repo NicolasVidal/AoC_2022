@@ -1,24 +1,24 @@
 use itertools::Itertools;
 
 #[inline(always)]
-fn get_letter_score(single: char) -> usize {
+fn get_letter_score(single: char) -> u8 {
     if ('a'..='z').contains(&single) {
-        single as usize - 'a' as usize + 1
+        single as u8 - 'a' as u8 + 1
     } else {
-        single as usize - 'A' as usize + 27
+        single as u8 - 'A' as u8 + 27
     }
 }
 
 #[allow(unused)]
 pub fn _p1(s: &str) -> usize {
-    let mut total = 0usize;
+    let mut total = 0u16;
     for line in s.lines() {
         let (left, right) = line.split_at(line.len() / 2);
 
         let single = left.chars().into_iter()
             .filter(|c| right.chars().contains(c)).next().unwrap();
 
-        total += get_letter_score(single);
+        total += get_letter_score(single) as u16;
     }
     total as usize
 }
@@ -32,7 +32,7 @@ pub fn p1() -> usize {
 
 #[allow(unused)]
 pub fn _p2(s: &str) -> usize {
-    let mut total = 0usize;
+    let mut total = 0u16;
     for mut group in &s.lines().chunks(3) {
         let first = group.next().unwrap();
         let second = group.next().unwrap();
@@ -42,7 +42,7 @@ pub fn _p2(s: &str) -> usize {
             .filter(|c| second.chars().contains(c) && third.chars().contains(c))
             .next().unwrap();
 
-        total += get_letter_score(single);
+        total += get_letter_score(single) as u16;
     }
     total as usize
 }
