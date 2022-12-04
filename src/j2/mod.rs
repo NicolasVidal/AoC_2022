@@ -124,7 +124,7 @@ pub fn _p2(s: &str) -> usize {
         let (a, b) = get_chars(line);
         let first = PlayerMove::from_char(a);
         let second = PlayerMove::from_desired_outcome_for_second_player(first,
-                                                      Outcome::from_char(b));
+                                                                        Outcome::from_char(b));
 
         total += compute_score(first, second);
     }

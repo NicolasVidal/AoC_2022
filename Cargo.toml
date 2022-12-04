@@ -7,22 +7,6 @@ edition = "2021"
 lto = true
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
-
-[[bench]]
-name = "j3"
-path = "src/bench_j3.rs"
-harness = false
-
-[[bench]]
-name = "j2"
-path = "src/bench_j2.rs"
-harness = false
-
-[[bench]]
-name = "j1"
-path = "src/bench_j1.rs"
-harness = false
-
 [dependencies]
 itertools = "0.10.5"
 criterion = { version = "0.4.0", features = ["html_reports"] }
@@ -32,3 +16,24 @@ smallvec = "1.10.0"
 regex = "1.7.0"
 peg = "0.8.1"
 rand = "0.8.5"
+
+[[bench]]
+name = "j1"
+path = "src/bench_j1.rs"
+harness = false
+
+[[bench]]
+name = "j2"
+path = "src/bench_j2.rs"
+harness = false
+
+[[bench]]
+name = "j3"
+path = "src/bench_j3.rs"
+harness = false
+
+
+[[bench]]
+name = "j4"
+path = "src/bench_j4.rs"
+harness = false
