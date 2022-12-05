@@ -1,8 +1,9 @@
 use std::str::FromStr;
+use smallvec::{smallvec, SmallVec};
 
 fn get_stacks(s: &str, keep_order: bool) -> String {
-    let mut stack_of_stacks = vec!();
-    let mut stack_lines = vec!();
+    let mut stack_of_stacks: SmallVec<[SmallVec<[char; 128]>; 128]> = smallvec!();
+    let mut stack_lines: SmallVec<[&str; 128]> = smallvec!();
     let mut max_length = 0;
 
     for l in s.lines() {
@@ -12,13 +13,13 @@ fn get_stacks(s: &str, keep_order: bool) -> String {
         if l.len() > max_length {
             max_length = l.len();
         }
-        stack_lines.push(l.to_string());
+        stack_lines.push(l);
     }
 
     let num_stacks = (max_length + 1) / 4;
 
     for _ in 0..num_stacks {
-        stack_of_stacks.push(vec!())
+        stack_of_stacks.push(smallvec!())
     }
 
     for (_, stack_line) in stack_lines.iter().rev().skip(1).enumerate() {
@@ -50,7 +51,7 @@ fn get_stacks(s: &str, keep_order: bool) -> String {
                 stack_of_stacks[to].push(popped);
             }
         } else {
-            let mut temp_vec = vec!();
+            let mut temp_vec: SmallVec<[char; 128]> = smallvec!();
             for _ in 0..times {
                 let popped = stack_of_stacks[from].pop().unwrap();
                 temp_vec.push(popped);
@@ -106,6 +107,6 @@ mod j5_tests {
     #[allow(unused)]
     fn test_p2() {
         assert_eq!("MCD", _p2(include_str!("j5_test.txt")));
-        assert_eq!("CMZ", _p2(include_str!("j5.txt")));
+        assert_eq!("TDGJQTZSL", _p2(include_str!("j5.txt")));
     }
 }
