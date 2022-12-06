@@ -41,3 +41,9 @@ harness = false
 name = "j5"
 path = "src/bench_j5.rs"
 harness = false
+
+
+[[bench]]
+name = "j6"
+path = "src/bench_j6.rs"
+harness = false
