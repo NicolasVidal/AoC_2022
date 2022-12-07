@@ -1,9 +1,10 @@
-use std::collections::HashMap;
 use std::str::FromStr;
+
+use smallvec::SmallVec;
 
 #[derive(Debug, Eq, PartialEq, Clone)]
 enum Element {
-    Dir { name: &'static str, elements: HashMap<&'static str, Element> },
+    Dir { name: &'static str, elements: Box<SmallVec<[Element; 16]>> },
     File { name: &'static str, size: usize },
 }
 
@@ -13,7 +14,10 @@ fn get_element_at_path<'a>(root: &'a mut Element, path: &Vec<&'static str>) -> &
     for p in path {
         current = match current {
             Element::Dir { elements, .. } => {
-                elements.get_mut(p).unwrap()
+                elements.iter_mut().find(|elt| match elt {
+                    Element::Dir { name, .. } => {name == p}
+                    _ => {false}
+                }).unwrap()
             }
             Element::File { .. } => { panic!() }
         }
@@ -26,7 +30,7 @@ fn compute_dir_of_size_at_most_than_max_size_and_return_total_dir_size(root: &El
     let mut self_size = 0;
     match root {
         Element::Dir { elements, .. } => {
-            for elt in elements.values() {
+            for elt in elements.iter() {
                 self_size += compute_dir_of_size_at_most_than_max_size_and_return_total_dir_size(elt, max_size, total);
             }
             if self_size <= max_size {
@@ -45,7 +49,7 @@ fn find_smallest_dir(root: &Element, min_size: usize, smallest_large_enough: &mu
     let mut self_size = 0;
     match root {
         Element::Dir { elements, .. } => {
-            for elt in elements.values() {
+            for elt in elements.iter() {
                 self_size += find_smallest_dir(elt, min_size, smallest_large_enough);
             }
             if self_size >= min_size && self_size < *smallest_large_enough {
@@ -61,7 +65,7 @@ fn find_smallest_dir(root: &Element, min_size: usize, smallest_large_enough: &mu
 
 
 fn build_file_tree(s: &'static str) -> Element {
-    let mut root = Element::Dir { name: "/", elements: HashMap::new() };
+    let mut root = Element::Dir { name: "/", elements: Box::new(SmallVec::new()) };
     {
         let mut current = &mut root;
 
@@ -96,8 +100,13 @@ fn build_file_tree(s: &'static str) -> Element {
                 "dir" => {
                     match current {
                         Element::Dir { elements, .. } => {
-                            let name = split.next().unwrap();
-                            elements.insert(name, Element::Dir { name, elements: HashMap::new() });
+                            let elt_name = split.next().unwrap();
+                            if !elements.iter().any(|elt| match elt {
+                                Element::Dir { name, .. } => { *name == elt_name }
+                                _ => false
+                            }) {
+                                elements.push(Element::Dir { name: elt_name, elements: Box::new(SmallVec::new()) });
+                            }
                         }
                         Element::File { .. } => { panic!() }
                     }
@@ -105,8 +114,13 @@ fn build_file_tree(s: &'static str) -> Element {
                 size => {
                     match current {
                         Element::Dir { elements, .. } => {
-                            let name = split.next().unwrap();
-                            elements.insert(name, Element::File { name, size: usize::from_str(size).unwrap() });
+                            let elt_name = split.next().unwrap();
+                            if !elements.iter().any(|elt| match elt {
+                                Element::File { name, .. } => { *name == elt_name }
+                                _ => false
+                            }) {
+                                elements.push(Element::File { name: elt_name, size: usize::from_str(size).unwrap() });
+                            }
                         }
                         Element::File { .. } => { panic!() }
                     }
