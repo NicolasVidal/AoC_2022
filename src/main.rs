@@ -1,3 +1,4 @@
+mod j7;
 mod j6;
 mod j5;
 mod j4;
@@ -41,4 +42,9 @@ fn main() {
     println!("{}", j6::p1());
     println!("p2");
     println!("{}", j6::p2());
+    println!("J7 -----------------------------------------------------");
+    println!("p1");
+    println!("{}", j7::p1());
+    println!("p2");
+    println!("{}", j7::p2());
 }
