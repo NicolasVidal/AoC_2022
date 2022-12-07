@@ -3,9 +3,9 @@ use itertools::Itertools;
 #[inline(always)]
 fn get_letter_score(single: char) -> u8 {
     if ('a'..='z').contains(&single) {
-        single as u8 - 'a' as u8 + 1
+        single as u8 - b'a' + 1
     } else {
-        single as u8 - 'A' as u8 + 27
+        single as u8 - b'A' + 27
     }
 }
 
@@ -16,7 +16,7 @@ pub fn _p1(s: &str) -> usize {
         let (left, right) = line.split_at(line.len() / 2);
 
         let single = left.chars().into_iter()
-            .filter(|c| right.chars().contains(c)).next().unwrap();
+            .find(|c| right.chars().contains(c)).unwrap();
 
         total += get_letter_score(single) as u16;
     }
@@ -39,8 +39,8 @@ pub fn _p2(s: &str) -> usize {
         let third = group.next().unwrap();
 
         let single = first.chars().into_iter()
-            .filter(|c| second.chars().contains(c) && third.chars().contains(c))
-            .next().unwrap();
+            .find(|c| second.chars().contains(c) && third.chars().contains(c))
+            .unwrap();
 
         total += get_letter_score(single) as u16;
     }

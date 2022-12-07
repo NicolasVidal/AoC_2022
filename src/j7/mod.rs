@@ -60,7 +60,7 @@ fn find_smallest_dir(root: &Element, min_size: usize, smallest_large_enough: &mu
 }
 
 
-fn build_file_tree<'a>(s: &'static str) -> Element {
+fn build_file_tree(s: &'static str) -> Element {
     let mut root = Element::Dir { name: "/", elements: HashMap::new() };
     {
         let mut current = &mut root;
@@ -71,7 +71,7 @@ fn build_file_tree<'a>(s: &'static str) -> Element {
             if line.starts_with("ls") {
                 continue;
             }
-            let mut split = line.split(" ");
+            let mut split = line.split(' ');
 
             match split.next().unwrap() {
                 "$" => {
