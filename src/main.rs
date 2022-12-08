@@ -1,5 +1,12 @@
 extern crate core;
 
+use std::alloc::System;
+
+#[allow(unused)]
+use tracking_allocator::{
+    AllocationGroupId, AllocationRegistry, AllocationTracker, Allocator,
+};
+
 mod j8;
 mod j7;
 mod j6;
@@ -9,15 +16,8 @@ mod j3;
 mod j2;
 mod j1;
 
-use std::alloc::System;
-#[allow(unused)]
-use tracking_allocator::{
-    AllocationGroupId, AllocationGroupToken, AllocationRegistry, AllocationTracker, Allocator,
-};
-
 #[global_allocator]
-static GLOBAL: tracking_allocator::Allocator<System> =
-    tracking_allocator::Allocator::system();
+static GLOBAL: Allocator<System> = tracking_allocator::Allocator::system();
 
 // #[global_allocator]
 // static GLOBAL: Allocator<System> = Allocator::system();
@@ -55,8 +55,11 @@ impl AllocationTracker for StdoutTracker {
 
 fn main() {
     AllocationRegistry::set_global_tracker(StdoutTracker)
-    .expect("no other global tracker should be set yet");
+        .expect("no other global tracker should be set yet");
 
+    println!("STARTING DAYS COMPUTATIONS");
+
+    AllocationRegistry::enable_tracking();
     println!("J1 -----------------------------------------------------");
     println!("p1");
     println!("{}", j1::p1());
@@ -82,11 +85,9 @@ fn main() {
     println!("{}", j5::p1());
     println!("p2");
     println!("{}", j5::p2());
-    println!("J6 -----------------------------------------------------PROBLEM HEAP ALLOC");
+    println!("J6 -----------------------------------------------------");
     println!("p1");
-    // AllocationRegistry::enable_tracking();
     println!("{}", j6::p1());
-    // AllocationRegistry::disable_tracking();
     println!("p2");
     println!("{}", j6::p2());
     println!("J7 -----------------------------------------------------");
@@ -99,5 +100,5 @@ fn main() {
     println!("{}", j8::p1());
     println!("p2");
     println!("{}", j8::p2());
-
+    AllocationRegistry::disable_tracking();
 }

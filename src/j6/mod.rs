@@ -1,10 +1,15 @@
-use itertools::Itertools;
-
 fn get_start_position<const MIN_CHARS: usize>(s: &str) -> usize {
     let mut last_chars = ['$'; MIN_CHARS];
-    for (i, c) in s.lines().next().unwrap().chars().enumerate() {
+    'outer: for (i, c) in s.lines().next().unwrap().chars().enumerate() {
         last_chars[i % MIN_CHARS] = c;
-        if last_chars.iter().all_unique() && i >= MIN_CHARS {
+        if i >= MIN_CHARS {
+            for c1 in 0..(MIN_CHARS - 1) {
+                for c2 in (c1 + 1)..MIN_CHARS {
+                    if last_chars[c1] == last_chars[c2] {
+                        continue 'outer;
+                    }
+                }
+            }
             return i + 1;
         }
     }
