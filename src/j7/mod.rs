@@ -1,37 +1,41 @@
 use std::str::FromStr;
 
-use smallvec::SmallVec;
+use smallvec::{SmallVec, smallvec};
+
+const ESTIMATED_NODES_COUNT: usize = 512;
+const ESTIMATED_CHILDS_COUNT: usize = 16;
+const ESTIMATED_PATH_DEPTH_COUNT: usize = 16;
 
 #[derive(Debug, Eq, PartialEq, Clone)]
 enum Element {
-    Dir { name: &'static str, elements: Box<SmallVec<[Element; 16]>> },
+    Dir { name: &'static str, elements: SmallVec<[usize; ESTIMATED_CHILDS_COUNT]> },
     File { name: &'static str, size: usize },
 }
 
 #[inline(always)]
-fn get_element_at_path<'a>(root: &'a mut Element, path: &Vec<&'static str>) -> &'a mut Element {
+fn get_element_at_path(nodes: &SmallVec<[Element; ESTIMATED_NODES_COUNT]>, root: usize, path: &SmallVec<[&str; ESTIMATED_PATH_DEPTH_COUNT]>) -> usize {
     let mut current = root;
     for p in path {
-        current = match current {
+        current = **(&match &nodes[current] {
             Element::Dir { elements, .. } => {
-                elements.iter_mut().find(|elt| match elt {
-                    Element::Dir { name, .. } => {name == p}
-                    _ => {false}
+                elements.iter().find(|elt| match nodes[**elt] {
+                    Element::Dir { name, .. } => { name == *p }
+                    _ => { false }
                 }).unwrap()
             }
             Element::File { .. } => { panic!() }
-        }
+        })
     }
     current
 }
 
 #[inline(always)]
-fn compute_dir_of_size_at_most_than_max_size_and_return_total_dir_size(root: &Element, max_size: usize, total: &mut usize) -> usize {
+fn compute_dir_of_size_at_most_than_max_size_and_return_total_dir_size(nodes: &SmallVec<[Element; ESTIMATED_NODES_COUNT]>, root: usize, max_size: usize, total: &mut usize) -> usize {
     let mut self_size = 0;
-    match root {
+    match &nodes[root] {
         Element::Dir { elements, .. } => {
             for elt in elements.iter() {
-                self_size += compute_dir_of_size_at_most_than_max_size_and_return_total_dir_size(elt, max_size, total);
+                self_size += compute_dir_of_size_at_most_than_max_size_and_return_total_dir_size(nodes, *elt, max_size, total);
             }
             if self_size <= max_size {
                 *total += self_size;
@@ -45,12 +49,12 @@ fn compute_dir_of_size_at_most_than_max_size_and_return_total_dir_size(root: &El
 }
 
 #[inline(always)]
-fn find_smallest_dir(root: &Element, min_size: usize, smallest_large_enough: &mut usize) -> usize {
+fn find_smallest_dir(nodes: &SmallVec<[Element; ESTIMATED_NODES_COUNT]>, root: usize, min_size: usize, smallest_large_enough: &mut usize) -> usize {
     let mut self_size = 0;
-    match root {
+    match &nodes[root] {
         Element::Dir { elements, .. } => {
             for elt in elements.iter() {
-                self_size += find_smallest_dir(elt, min_size, smallest_large_enough);
+                self_size += find_smallest_dir(nodes, *elt, min_size, smallest_large_enough);
             }
             if self_size >= min_size && self_size < *smallest_large_enough {
                 *smallest_large_enough = self_size;
@@ -64,12 +68,14 @@ fn find_smallest_dir(root: &Element, min_size: usize, smallest_large_enough: &mu
 }
 
 
-fn build_file_tree(s: &'static str) -> Element {
-    let mut root = Element::Dir { name: "/", elements: Box::new(SmallVec::new()) };
+fn build_file_tree(s: &'static str) -> SmallVec<[Element; ESTIMATED_NODES_COUNT]> {
+    let mut nodes: SmallVec<[Element; ESTIMATED_NODES_COUNT]> = smallvec![];
+    let root = Element::Dir { name: "/", elements: smallvec![] };
+    nodes.push(root);
     {
-        let mut current = &mut root;
+        let mut current = 0usize;
 
-        let mut path = vec!();
+        let mut path: SmallVec<[&str; ESTIMATED_PATH_DEPTH_COUNT]> = smallvec![];
 
         for line in s.lines().skip(1) {
             if line.starts_with("ls") {
@@ -90,54 +96,74 @@ fn build_file_tree(s: &'static str) -> Element {
                                     path.push(new_dir);
                                 }
                             }
-                            current = &mut root;
-                            current = get_element_at_path(current, &path);
+                            current = 0;
+                            current = get_element_at_path(&nodes, current, &path);
                         }
                         "ls" => {}
                         _ => panic!()
                     }
                 }
                 "dir" => {
-                    match current {
+                    let elt = match &nodes[current.clone()] {
                         Element::Dir { elements, .. } => {
                             let elt_name = split.next().unwrap();
-                            if !elements.iter().any(|elt| match elt {
+                            if !elements.iter().any(|elt| match &nodes[*elt] {
                                 Element::Dir { name, .. } => { *name == elt_name }
                                 _ => false
                             }) {
-                                elements.push(Element::Dir { name: elt_name, elements: Box::new(SmallVec::new()) });
+                                Some(Element::Dir { name: elt_name, elements: smallvec![] })
+                            } else {
+                                None
                             }
                         }
-                        Element::File { .. } => { panic!() }
+                        Element::File { .. } => { panic!(); }
+                    };
+                    if let Some(node) = elt {
+                        let idx = nodes.len();
+                        nodes.push(node);
+                        match &mut nodes[current.clone()] {
+                            Element::Dir { elements, .. } => { elements.push(idx); }
+                            Element::File { .. } => { panic!() }
+                        }
                     }
                 }
                 size => {
-                    match current {
+                    let elt = match &nodes[current.clone()] {
                         Element::Dir { elements, .. } => {
                             let elt_name = split.next().unwrap();
-                            if !elements.iter().any(|elt| match elt {
+                            if !elements.iter().any(|elt| match &nodes[*elt] {
                                 Element::File { name, .. } => { *name == elt_name }
                                 _ => false
                             }) {
-                                elements.push(Element::File { name: elt_name, size: usize::from_str(size).unwrap() });
+                                Some(Element::File { name: elt_name, size: usize::from_str(size).unwrap() })
+                            } else {
+                                None
                             }
                         }
                         Element::File { .. } => { panic!() }
+                    };
+                    if let Some(node) = elt {
+                        let idx = nodes.len();
+                        nodes.push(node);
+                        match &mut nodes[current.clone()] {
+                            Element::Dir { elements, .. } => { elements.push(idx); }
+                            Element::File { .. } => { panic!() }
+                        }
                     }
                 }
             }
         }
     }
-    root
+    nodes
 }
 
 #[allow(unused)]
 pub fn _p1(s: &'static str) -> usize {
     let total_size = 0usize;
 
-    let root = build_file_tree(s);
+    let nodes = build_file_tree(s);
     let mut total_size = 0usize;
-    compute_dir_of_size_at_most_than_max_size_and_return_total_dir_size(&root, 100000, &mut total_size);
+    compute_dir_of_size_at_most_than_max_size_and_return_total_dir_size(&nodes, 0, 100000, &mut total_size);
     total_size
 }
 
@@ -148,12 +174,12 @@ pub fn p1() -> usize {
 
 #[allow(unused)]
 pub fn _p2(s: &'static str) -> usize {
-    let root = build_file_tree(s);
+    let nodes = build_file_tree(s);
     let mut total_size = 0usize;
-    let total_used_space = compute_dir_of_size_at_most_than_max_size_and_return_total_dir_size(&root, 100000, &mut total_size);
+    let total_used_space = compute_dir_of_size_at_most_than_max_size_and_return_total_dir_size(&nodes, 0, 100000, &mut total_size);
     let bytes_to_free = 30000000 - (70000000 - total_used_space);
     let mut smallest_large_enough = usize::MAX;
-    find_smallest_dir(&root, bytes_to_free, &mut smallest_large_enough);
+    find_smallest_dir(&nodes, 0, bytes_to_free, &mut smallest_large_enough);
     smallest_large_enough
 }
 
