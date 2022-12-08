@@ -1,7 +1,20 @@
+use std::fmt::{Display, Formatter, Write};
 use std::str::FromStr;
+
 use smallvec::{smallvec, SmallVec};
 
-fn get_stacks(s: &str, keep_order: bool) -> String {
+pub struct Chars(SmallVec<[char; 128]>);
+
+impl Display for Chars {
+    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+        for elt in self.0.iter() {
+            f.write_char(*elt).unwrap();
+        }
+        Ok(())
+    }
+}
+
+fn get_stacks(s: &str, keep_order: bool) -> Chars {
     let mut stack_of_stacks: SmallVec<[SmallVec<[char; 128]>; 128]> = smallvec!();
     let mut stack_lines: SmallVec<[&str; 128]> = smallvec!();
     let mut max_length = 0;
@@ -62,51 +75,53 @@ fn get_stacks(s: &str, keep_order: bool) -> String {
         }
     }
 
-    let mut s = String::new();
-
+    let mut buffer = Chars{0: smallvec![]};
     for mut stack in stack_of_stacks {
-        s.push(stack.pop().unwrap())
+        buffer.0.push(stack.pop().unwrap())
     }
-    s
+
+    buffer
 }
 
 #[allow(unused)]
-pub fn _p1(s: &str) -> String {
+pub fn _p1(s: &'static str) -> Chars {
     get_stacks(s, false)
 }
 
 #[allow(unused)]
-pub fn p1() -> String {
+pub fn p1() -> Chars {
     _p1(include_str!("j5.txt"))
 }
 
 #[allow(unused)]
-pub fn _p2(s: &str) -> String {
+pub fn _p2(s: &'static str) -> Chars {
     get_stacks(s, true)
 }
 
 #[allow(unused)]
-pub fn p2() -> String {
+pub fn p2() -> Chars {
     _p2(include_str!("j5.txt"))
 }
 
 #[cfg(test)]
 #[allow(unused)]
 mod j5_tests {
+    use itertools::Itertools;
+
     #[allow(unused)]
     use super::*;
 
     #[test]
     #[allow(unused)]
     fn test_p1() {
-        assert_eq!("CMZ", _p1(include_str!("j5_test.txt")));
-        assert_eq!("BZLVHBWQF", _p1(include_str!("j5.txt")));
+        assert_eq!("CMZ", _p1(include_str!("j5_test.txt")).0.into_iter().join(""));
+        assert_eq!("BZLVHBWQF", _p1(include_str!("j5.txt")).0.into_iter().join(""));
     }
 
     #[test]
     #[allow(unused)]
     fn test_p2() {
-        assert_eq!("MCD", _p2(include_str!("j5_test.txt")));
-        assert_eq!("TDGJQTZSL", _p2(include_str!("j5.txt")));
+        assert_eq!("MCD", _p2(include_str!("j5_test.txt")).0.into_iter().join(""));
+        assert_eq!("TDGJQTZSL", _p2(include_str!("j5.txt")).0.into_iter().join(""));
     }
 }

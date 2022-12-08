@@ -1,3 +1,5 @@
+extern crate core;
+
 mod j8;
 mod j7;
 mod j6;
@@ -55,8 +57,7 @@ fn main() {
     AllocationRegistry::set_global_tracker(StdoutTracker)
     .expect("no other global tracker should be set yet");
 
-    // AllocationRegistry::enable_tracking();
-    println!("J1 -----------------------------------------------------PROBLEM HEAP ALLOC");
+    println!("J1 -----------------------------------------------------");
     println!("p1");
     println!("{}", j1::p1());
     println!("p2");
@@ -76,14 +77,16 @@ fn main() {
     println!("{}", j4::p1());
     println!("p2");
     println!("{}", j4::p2());
-    println!("J5 -----------------------------------------------------PROBLEM HEAP ALLOC");
+    println!("J5 -----------------------------------------------------");
     println!("p1");
     println!("{}", j5::p1());
     println!("p2");
     println!("{}", j5::p2());
     println!("J6 -----------------------------------------------------PROBLEM HEAP ALLOC");
     println!("p1");
+    // AllocationRegistry::enable_tracking();
     println!("{}", j6::p1());
+    // AllocationRegistry::disable_tracking();
     println!("p2");
     println!("{}", j6::p2());
     println!("J7 -----------------------------------------------------");
@@ -96,6 +99,5 @@ fn main() {
     println!("{}", j8::p1());
     println!("p2");
     println!("{}", j8::p2());
-    // AllocationRegistry::disable_tracking();
 
 }
