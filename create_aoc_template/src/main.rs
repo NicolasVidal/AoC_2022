@@ -23,7 +23,7 @@ fn copy_dir_all(src: impl AsRef<Path>, dst: impl AsRef<Path>) -> io::Result<()> 
 }
 
 fn main() {
-    let day = 8;
+    let day = 9;
 
     let day_name = format!("j{}", day);
 
@@ -48,6 +48,7 @@ fn main() {
     f.read_to_string(&mut s).unwrap();
     let mut lines: Vec<&str> = s.lines().collect();
     let last_line = lines.pop().unwrap();
+    let before_last_line = lines.pop().unwrap();
     let str = format!("mod {};", day_name);
     lines.insert(0, str.as_str());
     let str = format!("    println!(\"{} -----------------------------------------------------\");", day_name.to_uppercase());
@@ -60,6 +61,7 @@ fn main() {
     lines.push(str);
     let str = format!("    println!(\"{{}}\", {}::p2());", day_name);
     lines.push(str.as_str());
+    lines.push(before_last_line);
     lines.push(last_line);
     fs::File::create("../src/main.rs").unwrap().write_all(lines.join(NL).as_bytes()).unwrap();
 
