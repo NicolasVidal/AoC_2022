@@ -16,7 +16,7 @@ enum Element {
 fn get_element_at_path(nodes: &SmallVec<[Element; ESTIMATED_NODES_COUNT]>, root: usize, path: &SmallVec<[&str; ESTIMATED_PATH_DEPTH_COUNT]>) -> usize {
     let mut current = root;
     for p in path {
-        current = **(&match &nodes[current] {
+        current = *(match &nodes[current] {
             Element::Dir { elements, .. } => {
                 elements.iter().find(|elt| match nodes[**elt] {
                     Element::Dir { name, .. } => { name == *p }
@@ -104,7 +104,7 @@ fn build_file_tree(s: &'static str) -> SmallVec<[Element; ESTIMATED_NODES_COUNT]
                     }
                 }
                 "dir" => {
-                    let elt = match &nodes[current.clone()] {
+                    let elt = match &nodes[current] {
                         Element::Dir { elements, .. } => {
                             let elt_name = split.next().unwrap();
                             if !elements.iter().any(|elt| match &nodes[*elt] {
@@ -121,14 +121,14 @@ fn build_file_tree(s: &'static str) -> SmallVec<[Element; ESTIMATED_NODES_COUNT]
                     if let Some(node) = elt {
                         let idx = nodes.len();
                         nodes.push(node);
-                        match &mut nodes[current.clone()] {
+                        match &mut nodes[current] {
                             Element::Dir { elements, .. } => { elements.push(idx); }
                             Element::File { .. } => { panic!() }
                         }
                     }
                 }
                 size => {
-                    let elt = match &nodes[current.clone()] {
+                    let elt = match &nodes[current] {
                         Element::Dir { elements, .. } => {
                             let elt_name = split.next().unwrap();
                             if !elements.iter().any(|elt| match &nodes[*elt] {
@@ -145,7 +145,7 @@ fn build_file_tree(s: &'static str) -> SmallVec<[Element; ESTIMATED_NODES_COUNT]
                     if let Some(node) = elt {
                         let idx = nodes.len();
                         nodes.push(node);
-                        match &mut nodes[current.clone()] {
+                        match &mut nodes[current] {
                             Element::Dir { elements, .. } => { elements.push(idx); }
                             Element::File { .. } => { panic!() }
                         }

@@ -75,7 +75,7 @@ fn get_stacks(s: &str, keep_order: bool) -> Chars {
         }
     }
 
-    let mut buffer = Chars{0: smallvec![]};
+    let mut buffer = Chars(smallvec![]);
     for mut stack in stack_of_stacks {
         buffer.0.push(stack.pop().unwrap())
     }

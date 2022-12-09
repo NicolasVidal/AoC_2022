@@ -26,9 +26,7 @@ impl Sub for Vec2D {
 impl From<(i32, i32)> for Vec2D {
     #[inline(always)]
     fn from(tuple: (i32, i32)) -> Self {
-        Self {
-            0: tuple
-        }
+        Self(tuple)
     }
 }
 
@@ -75,7 +73,7 @@ pub fn solve<const ROPE_LENGTH: usize,
         let movement = get_movement_direction(direction);
 
         'outer: for _ in 0..steps {
-            knots[0] += movement.into();
+            knots[0] += movement;
             for i in 0..(ROPE_LENGTH - 1) {
                 let diff = knots[i] - knots[i + 1];
                 if diff.0.0.abs() <= 1 && diff.0.1.abs() <= 1 {

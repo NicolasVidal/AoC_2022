@@ -32,7 +32,7 @@ impl Matrix {
     }
 }
 
-impl<'a> Index<usize> for Matrix {
+impl Index<usize> for Matrix {
     type Output = [u8];
 
     #[inline(always)]
@@ -42,7 +42,7 @@ impl<'a> Index<usize> for Matrix {
     }
 }
 
-impl<'a> Index<(usize, usize)> for Matrix {
+impl Index<(usize, usize)> for Matrix {
     type Output = u8;
 
     #[inline(always)]
@@ -57,7 +57,7 @@ fn parse_matrix(s: &str) -> Matrix {
 
     for line in s.lines() {
         for c in line.chars() {
-            matrix.push(c as u8 - '0' as u8);
+            matrix.push(c as u8 - b'0');
         }
         matrix.end_row();
     }
