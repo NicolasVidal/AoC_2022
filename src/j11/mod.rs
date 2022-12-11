@@ -38,24 +38,19 @@ fn monkey_business(s: &str, divide_by_tree: bool, rounds: usize) -> usize {
     loop {
         let mut monkey = Monkey::default();
         lines.next().unwrap();
-        let mut parts = lines.next().unwrap().split(": ").skip(1);
-        for number in parts.next().unwrap().split(", ").map(|word| u64::from_str(word).unwrap()) {
+        for number in lines.next().unwrap().split(": ").nth(1).unwrap().split(", ").map(|word| u64::from_str(word).unwrap()) {
             monkey.items.push(number);
         };
-        let mut raw_operation = lines.next().unwrap().split("old ").skip(1)
-            .next().unwrap().split(' ');
+        let mut raw_operation = lines.next().unwrap().split("old ").nth(1).unwrap().split(' ');
         monkey.operation = match (raw_operation.next().unwrap(), u64::from_str(raw_operation.next().unwrap())) {
             ("*", Ok(num)) => Operation::Times(num),
             ("+", Ok(num)) => Operation::Plus(num),
             ("*", _) => Operation::Squared(),
             _ => panic!()
         };
-        monkey.test = u64::from_str(lines.next().unwrap().split("by ").skip(1)
-            .next().unwrap()).unwrap();
-        monkey.send_true = usize::from_str(lines.next().unwrap().split("monkey ").skip(1)
-            .next().unwrap()).unwrap();
-        monkey.send_false = usize::from_str(lines.next().unwrap().split("monkey ").skip(1)
-            .next().unwrap()).unwrap();
+        monkey.test = u64::from_str(lines.next().unwrap().split("by ").nth(1).unwrap()).unwrap();
+        monkey.send_true = usize::from_str(lines.next().unwrap().split("monkey ").nth(1).unwrap()).unwrap();
+        monkey.send_false = usize::from_str(lines.next().unwrap().split("monkey ").nth(1).unwrap()).unwrap();
 
         monkeys.push(monkey);
         match lines.next() {
@@ -64,7 +59,7 @@ fn monkey_business(s: &str, divide_by_tree: bool, rounds: usize) -> usize {
         }
     }
 
-    let monkey_mod = monkeys.iter().map(|m| m.test).fold(1u64, |left, right| left * right);
+    let monkey_mod: u64 = monkeys.iter().map(|m| m.test).product();
 
     for _ in 1..=rounds {
         let mut next_monkeys = monkeys.clone();
@@ -87,9 +82,9 @@ fn monkey_business(s: &str, divide_by_tree: bool, rounds: usize) -> usize {
                 };
 
                 if divide_by_tree {
-                    worry = worry / 3;
+                    worry /= 3;
                 } else {
-                    worry = worry % monkey_mod;
+                    worry %= monkey_mod;
                 }
 
                 if worry % monkey.test == 0 {
