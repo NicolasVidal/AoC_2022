@@ -1,3 +1,4 @@
+mod j11;
 mod j10;
 mod j9;
 extern crate core;
@@ -112,5 +113,10 @@ fn main() {
     println!("{}", j10::p1());
     println!("p2");
     println!("{}", j10::p2());
+    println!("J11 -----------------------------------------------------");
+    println!("p1");
+    println!("{}", j11::p1());
+    println!("p2");
+    println!("{}", j11::p2());
     AllocationRegistry::disable_tracking();
 }
