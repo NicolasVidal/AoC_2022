@@ -62,12 +62,10 @@ fn monkey_business(s: &str, divide_by_tree: bool, rounds: usize) -> usize {
     let monkey_mod: u64 = monkeys.iter().map(|m| m.test).product();
 
     for _ in 1..=rounds {
-        let mut next_monkeys = monkeys.clone();
         for monkey_idx in 0..monkeys.len() {
-            monkeys[monkey_idx] = next_monkeys[monkey_idx].clone();
-            let monkey = &monkeys[monkey_idx];
+            let mut monkey = std::mem::replace(&mut monkeys[monkey_idx], Monkey::default());
             for item_idx in monkey.items.iter() {
-                next_monkeys[monkey_idx].inspections += 1;
+                monkey.inspections += 1;
                 let mut worry = *item_idx;
                 worry = match &monkey.operation {
                     Operation::Plus(num) => {
@@ -83,19 +81,19 @@ fn monkey_business(s: &str, divide_by_tree: bool, rounds: usize) -> usize {
 
                 if divide_by_tree {
                     worry /= 3;
-                } else {
+                } else if worry > monkey_mod {
                     worry %= monkey_mod;
                 }
 
                 if worry % monkey.test == 0 {
-                    next_monkeys[monkey.send_true].items.push(worry);
+                    monkeys[monkey.send_true].items.push(worry);
                 } else {
-                    next_monkeys[monkey.send_false].items.push(worry);
+                    monkeys[monkey.send_false].items.push(worry);
                 }
             }
-            next_monkeys[monkey_idx].items.clear();
+            monkey.items.clear();
+            let _ = std::mem::replace(&mut monkeys[monkey_idx], monkey);
         }
-        std::mem::swap(&mut monkeys, &mut next_monkeys);
     }
 
     let (first, second) = monkeys.into_iter().map(|monkey| monkey.inspections).fold((0, 0),
