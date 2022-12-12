@@ -63,7 +63,7 @@ fn monkey_business(s: &str, divide_by_tree: bool, rounds: usize) -> usize {
 
     for _ in 1..=rounds {
         for monkey_idx in 0..monkeys.len() {
-            let mut monkey = std::mem::replace(&mut monkeys[monkey_idx], Monkey::default());
+            let mut monkey = std::mem::take(&mut monkeys[monkey_idx]);
             for item_idx in monkey.items.iter() {
                 monkey.inspections += 1;
                 let mut worry = *item_idx;

@@ -1,3 +1,5 @@
+use std::cmp::Ordering;
+
 use smallvec::{SmallVec, smallvec};
 
 #[derive(Debug, Clone)]
@@ -17,8 +19,34 @@ struct NodeNeighbours {
     pub neighbours: SmallVec<[Link; 4]>,
 }
 
+trait Comparer {
+    type T;
+    fn compare(&self, elt1: &Self::T, elt2: &Self::T) -> Ordering;
+}
+
+struct NodeToExploreComparer {
+    target_row: usize,
+    target_col: usize,
+    cols: usize,
+}
+
+impl NodeToExploreComparer {
+    fn estimate(&self, elt: &NodeToExplore) -> i32 {
+        ((elt.node / self.cols).abs_diff(self.target_row) +
+            (elt.node % self.cols).abs_diff(self.target_col)) as i32
+    }
+}
+
+impl Comparer for NodeToExploreComparer {
+    type T = NodeToExplore;
+
+    fn compare(&self, elt1: &NodeToExplore, elt2: &NodeToExplore) -> Ordering {
+        (elt1.tag + self.estimate(elt1)).cmp(&(elt2.tag + self.estimate(elt2)))
+    }
+}
+
 pub fn compute_path_cost<const EXPECTED_NODES_COUNT: usize,
-    const EXPECTED_NODES_TAG: usize>(s: &str, any_square: bool) -> usize {
+    const EXPECTED_NODES_TAG: usize>(s: &str, any_square: bool, use_heuristic: bool) -> usize {
     let rows = s.lines().enumerate().count();
     let cols = s.lines().next().unwrap().chars().count();
 
@@ -121,32 +149,44 @@ pub fn compute_path_cost<const EXPECTED_NODES_COUNT: usize,
         });
     }
 
-    while !nodes_tags.is_empty() {
-        // We don't need to sort as the grid is uniform
-        // nodes_tags.sort_by_key(|n| n.tag);
+    let cmp = NodeToExploreComparer {
+        target_row: end_node / rows,
+        target_col: end_node % rows,
+        cols,
+    };
 
-        if nodes_explored[nodes_tags[0].node] {
-            nodes_tags.remove(0);
+    while !nodes_tags.is_empty() {
+        let current_node = if use_heuristic {
+            (0..nodes_tags.len())
+                .min_by(|elt1, elt2|
+                    cmp.compare(&nodes_tags[*elt1], &nodes_tags[*elt2])).unwrap()
+        } else {
+            // We don't need to sort as the grid is uniform
+            0
+        };
+
+        if nodes_explored[nodes_tags[current_node].node] {
+            nodes_tags.remove(current_node);
             continue;
         }
 
-        if nodes_tags[0].node == end_node {
-            return nodes_tags[0].tag as usize;
+        if nodes_tags[current_node].node == end_node {
+            return nodes_tags[current_node].tag as usize;
         }
 
-        for neighbour in nodes_neighbours[nodes_tags[0].node].neighbours.iter() {
+        for neighbour in nodes_neighbours[nodes_tags[current_node].node].neighbours.iter() {
             if nodes_explored[neighbour.node] {
                 continue;
             }
 
             nodes_tags.push(NodeToExplore {
                 node: neighbour.node,
-                tag: nodes_tags[0].tag + neighbour.weight,
+                tag: nodes_tags[current_node].tag + neighbour.weight,
             })
         }
 
-        nodes_explored[nodes_tags[0].node] = true;
-        nodes_tags.remove(0);
+        nodes_explored[nodes_tags[current_node].node] = true;
+        nodes_tags.remove(current_node);
     }
 
     panic!("No Path Found, wtf ?")
@@ -155,7 +195,7 @@ pub fn compute_path_cost<const EXPECTED_NODES_COUNT: usize,
 
 #[allow(unused)]
 pub fn _p1(s: &str) -> usize {
-    compute_path_cost::<2501, 10004>(s, false)
+    compute_path_cost::<2501, 10004>(s, false, false)
 }
 
 #[allow(unused)]
@@ -165,7 +205,7 @@ pub fn p1() -> usize {
 
 #[allow(unused)]
 pub fn _p2(s: &str) -> usize {
-    compute_path_cost::<2501, 10004>(s, true)
+    compute_path_cost::<2501, 10004>(s, true, true)
 }
 
 #[allow(unused)]
