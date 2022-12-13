@@ -1,65 +1,90 @@
 use std::cmp::Ordering;
+use std::iter::Peekable;
+use std::str::Chars;
 
-#[derive(Debug, Clone, Eq, PartialEq)]
-pub enum Element {
-    Value(u8),
-    List(Vec<Element>),
+fn is_digit(c: &char) -> bool {
+    *c >= '0' && *c <= '9'
 }
 
-peg::parser! {
-            grammar element_parser() for str {
-                rule number() -> Element
-                    = n:$(['0'..='9']+) { Element::Value(n.parse().unwrap()) }
-
-                pub rule list() -> Element
-                    = "[" l:((number() / list()) ** ",") "]" { Element::List(l) }
-            }
-        }
-
-
-impl Element {
-    pub fn parse_str(s: &str) -> Element {
-        element_parser::list(s).unwrap()
-    }
+fn are_digits(c1: &char, c2: &char) -> bool {
+    is_digit(c1) && is_digit(c2)
 }
 
-impl PartialOrd<Self> for Element {
-    fn partial_cmp(&self, other: &Self) -> Option<Ordering> {
-        Some(self.cmp(other))
-    }
-}
-
-impl Ord for Element {
-    fn cmp(&self, other: &Self) -> Ordering {
-        match (self, other) {
-            (Element::List(list1), Element::List(list2)) if
-            list1.is_empty() && list2.is_empty() => {
-                Ordering::Equal
-            }
-            (Element::List(list1), _) if
-            list1.is_empty() => {
-                Ordering::Less
-            }
-            (_, Element::List(list2)) if
-            list2.is_empty() => {
-                Ordering::Greater
-            }
-            (Element::Value(v1), Element::Value(v2)) => {
-                v1.cmp(v2)
-            }
-            (Element::Value(v1), Element::List(_)) => {
-                Element::List(vec![Element::Value(*v1)]).cmp(other)
-            }
-            (Element::List(_), Element::Value(v2)) => {
-                self.cmp(&Element::List(vec![Element::Value(*v2)]))
-            }
-            (Element::List(list1), Element::List(list2)) => {
-                if let Some(ord) = list1.iter().zip(list2)
-                    .map(|(elt1, elt2)| elt1.cmp(elt2))
-                    .find(|ord| *ord != Ordering::Equal) {
-                    ord
-                } else {
-                    list1.len().cmp(&list2.len())
+fn parse(first_chars: &mut Peekable<Chars>, second_chars: &mut Peekable<Chars>) -> Ordering {
+    let mut first_left_to_match = 0;
+    let mut second_left_to_match = 0;
+    loop {
+        match (first_chars.peek(), second_chars.peek()) {
+            (None, None) => { panic!() }
+            (Some(_), None) => return Ordering::Greater,
+            (None, Some(_)) => return Ordering::Less,
+            (Some(v1), Some(v2)) => {
+                match (v1, v2) {
+                    (',', c) if !is_digit(c) && *c != ']' && second_left_to_match > first_left_to_match => return Ordering::Greater,
+                    (c, ',') if !is_digit(c) && *c != ']' && first_left_to_match > second_left_to_match => return Ordering::Less,
+                    (v1, v2) if v1 == v2 => {
+                        first_chars.next().unwrap();
+                        second_chars.next().unwrap();
+                        continue;
+                    }
+                    (']', _) if second_left_to_match > first_left_to_match => {
+                        first_chars.next().unwrap();
+                        second_left_to_match -= 1;
+                    }
+                    (_, ']') if first_left_to_match > second_left_to_match => {
+                        second_chars.next().unwrap();
+                        first_left_to_match -= 1;
+                    }
+                    (v1, v2) if are_digits(v1, v2) => match v1.cmp(v2) {
+                        Ordering::Less => {
+                            first_chars.next().unwrap();
+                            second_chars.next().unwrap();
+                            return match (first_chars.peek(), second_chars.peek()) {
+                                (Some(c), None) if is_digit(c) => {
+                                    Ordering::Greater
+                                }
+                                (Some(c), Some(o)) if is_digit(c) && !is_digit(o) => {
+                                    Ordering::Greater
+                                }
+                                _ => Ordering::Less
+                            };
+                        }
+                        Ordering::Equal => continue,
+                        Ordering::Greater => {
+                            first_chars.next().unwrap();
+                            second_chars.next().unwrap();
+                            return match (first_chars.peek(), second_chars.peek()) {
+                                (None, Some(c)) if is_digit(c) => {
+                                    Ordering::Less
+                                }
+                                (Some(o), Some(c)) if is_digit(c) && !is_digit(o) => {
+                                    Ordering::Less
+                                }
+                                _ => Ordering::Greater
+                            };
+                        }
+                    }
+                    ('[', ']') => return Ordering::Greater,
+                    (']', '[') => return Ordering::Less,
+                    ('[', ',') => panic!(),
+                    (',', ']') => return Ordering::Greater,
+                    (']', ',') => return Ordering::Less,
+                    (c, ']') if is_digit(c) => return Ordering::Greater,
+                    (']', c) if is_digit(c) => return Ordering::Less,
+                    (c, '[') if is_digit(c) => {
+                        second_chars.next().unwrap();
+                        first_left_to_match += 1;
+                    }
+                    ('[', c) if is_digit(c) => {
+                        first_chars.next().unwrap();
+                        second_left_to_match += 1;
+                    }
+                    (',', c) if is_digit(c) => return Ordering::Less,
+                    (c, ',') if is_digit(c) => return Ordering::Greater,
+                    (a, b) => {
+                        dbg!(a, b);
+                        panic!()
+                    }
                 }
             }
         }
@@ -78,12 +103,13 @@ pub fn _p1(s: &str) -> usize {
         let first = lines.next().unwrap();
         let second = lines.next().unwrap();
 
-        let first = Element::parse_str(first);
-        let second = Element::parse_str(second);
+        let mut first = first.chars().peekable();
+        let mut second = second.chars().peekable();
 
-        match first.cmp(&second) {
+        let ordering = parse(&mut first, &mut second);
+        match ordering {
             Ordering::Less => { total += pair_index }
-            Ordering::Equal => { panic!() }
+            Ordering::Equal => {}
             Ordering::Greater => {}
         }
 
@@ -103,17 +129,53 @@ pub fn p1() -> usize {
 #[allow(unused)]
 pub fn _p2(s: &str) -> usize {
     let mut lines = s.lines();
-    let mut packets = vec!();
+    // let mut packets = vec!();
+
+    let mut total_under_2 = 0;
+    let mut total_under_6 = 0;
+
+    let two_str = "[[2]]";
+    let six_str = "[[6]]";
 
     loop {
-        let first = lines.next().unwrap();
-        let second = lines.next().unwrap();
+        let first_str = lines.next().unwrap();
+        let second_str = lines.next().unwrap();
 
-        let first = Element::parse_str(first);
-        let second = Element::parse_str(second);
+        let mut first = first_str.chars().peekable();
+        let mut two = two_str.chars().peekable();
 
-        packets.push(first);
-        packets.push(second);
+        match parse(&mut first, &mut two) {
+            Ordering::Less => { total_under_2 += 1 }
+            Ordering::Equal => {}
+            Ordering::Greater => {}
+        }
+
+        let mut first = first_str.chars().peekable();
+        let mut six = six_str.chars().peekable();
+
+        match parse(&mut first, &mut six) {
+            Ordering::Less => { total_under_6 += 1 }
+            Ordering::Equal => {}
+            Ordering::Greater => {}
+        }
+
+        let mut second = second_str.chars().peekable();
+        let mut two = two_str.chars().peekable();
+
+        match parse(&mut second, &mut two) {
+            Ordering::Less => { total_under_2 += 1 }
+            Ordering::Equal => {}
+            Ordering::Greater => {}
+        }
+
+        let mut second = second_str.chars().peekable();
+        let mut six = six_str.chars().peekable();
+
+        match parse(&mut second, &mut six) {
+            Ordering::Less => { total_under_6 += 1 }
+            Ordering::Equal => {}
+            Ordering::Greater => {}
+        }
 
         match lines.next() {
             None => { break; }
@@ -121,15 +183,7 @@ pub fn _p2(s: &str) -> usize {
         }
     }
 
-    packets.sort();
-
-    let first_packet = Element::List(vec!(Element::List(vec!(Element::Value(2)))));
-    let second_packet = Element::List(vec!(Element::List(vec!(Element::Value(6)))));
-
-    let pos1 = packets.iter().position(|packet| first_packet.cmp(packet) == Ordering::Less).unwrap();
-    let pos2 = packets.iter().position(|packet| second_packet.cmp(packet) == Ordering::Less).unwrap();
-
-    (pos1 + 1) * (pos2 + 2)
+    (total_under_2 + 1) * (total_under_6 + 1 + 1)
 }
 
 #[allow(unused)]
