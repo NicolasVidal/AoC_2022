@@ -2,7 +2,7 @@ use std::str::FromStr;
 
 use smallvec::{SmallVec, smallvec};
 
-#[derive(Copy, Clone, Debug)]
+#[derive(Copy, Clone, Debug, PartialEq, Eq)]
 enum CellType {
     Empty,
     Sand,
@@ -84,6 +84,23 @@ fn fill_rocks(s: &str, row_min: i32, col_min: i32, rows: i32, cols: i32) -> Smal
 }
 
 #[inline(always)]
+#[allow(unused)]
+fn show_sand_world(rows: i32, cols: i32, cells: &mut SmallVec<[CellType; 11270]>) {
+    dbg!((rows, cols));
+    for row in 0..rows {
+        for col in 0..cols {
+            print!("{}", match cells[(row * cols + col) as usize] {
+                CellType::Empty => '.',
+                CellType::Rock => '#',
+                CellType::Sand => 'o',
+            });
+        }
+        println!()
+    }
+    println!();
+}
+
+#[inline(always)]
 fn drop_sand_until_filled_or_fall_off(row_min: i32, col_min: i32, rows: i32, cols: i32, cells: &mut SmallVec<[CellType; 11270]>) -> usize {
     let mut rest_units = 0;
     'outer: loop {
@@ -130,19 +147,6 @@ fn drop_sand_until_filled_or_fall_off(row_min: i32, col_min: i32, rows: i32, col
         }
     }
 
-    // dbg!((rows, cols));
-    // for row in 0..rows {
-    //     for col in 0..cols {
-    //         print!("{}", match cells[(row * cols + col) as usize] {
-    //             CellType::Empty => '.',
-    //             CellType::Rock => '#',
-    //             CellType::Sand => 'o',
-    //         });
-    //     }
-    //     println!()
-    // }
-    // println!();
-
     rest_units as usize
 }
 
@@ -187,7 +191,26 @@ pub fn _p2(s: &str) -> usize {
         cells[(row_max * cols + col) as usize] = CellType::Rock
     }
 
-    drop_sand_until_filled_or_fall_off(row_min, col_min, rows, cols, &mut cells)
+    // Fill Forced Empty spaces with rocks
+    for row in 1..(rows - 1) {
+        for col in 1..(cols - 1) {
+            if cells[((row - 1) * cols + col) as usize] == CellType::Rock &&
+                cells[((row - 1) * cols + col - 1) as usize] == CellType::Rock &&
+                cells[((row - 1) * cols + col + 1) as usize] == CellType::Rock {
+                cells[(row * cols + col) as usize] = CellType::Rock;
+            }
+        }
+    }
+
+    // Count rocks
+    let rocks_count = cells.iter()
+        .take(((rows - 1) * cols) as usize)
+        .filter(|cell| **cell == CellType::Rock)
+        .count();
+
+    // Empty spaces are full space minus rocks
+    let rows = (rows - 1) as usize;
+    rows * rows - rocks_count
 }
 
 #[allow(unused)]
