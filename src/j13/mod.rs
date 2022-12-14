@@ -2,12 +2,33 @@ use std::cmp::Ordering;
 use std::iter::Peekable;
 use std::str::Chars;
 
+#[inline(always)]
 fn is_digit(c: &char) -> bool {
     *c >= '0' && *c <= '9'
 }
 
+#[inline(always)]
 fn are_digits(c1: &char, c2: &char) -> bool {
     is_digit(c1) && is_digit(c2)
+}
+
+#[inline(always)]
+fn get_first_digit(chars: &mut Peekable<Chars>) -> u8 {
+    let mut num = 0;
+    while let Some(c) = chars.peek() {
+        if !is_digit(c) {
+            break;
+        }
+        num = 10 * num + (*c as u8 - b'0');
+        chars.next().unwrap();
+    }
+
+    num
+}
+
+#[inline(always)]
+fn compare_digits(first_chars: &mut Peekable<Chars>, second_chars: &mut Peekable<Chars>) -> Ordering {
+    get_first_digit(first_chars).cmp(&get_first_digit(second_chars))
 }
 
 fn parse(first_chars: &mut Peekable<Chars>, second_chars: &mut Peekable<Chars>) -> Ordering {
@@ -35,38 +56,13 @@ fn parse(first_chars: &mut Peekable<Chars>, second_chars: &mut Peekable<Chars>) 
                         second_chars.next().unwrap();
                         first_left_to_match -= 1;
                     }
-                    (v1, v2) if are_digits(v1, v2) => match v1.cmp(v2) {
-                        Ordering::Less => {
-                            first_chars.next().unwrap();
-                            second_chars.next().unwrap();
-                            return match (first_chars.peek(), second_chars.peek()) {
-                                (Some(c), None) if is_digit(c) => {
-                                    Ordering::Greater
-                                }
-                                (Some(c), Some(o)) if is_digit(c) && !is_digit(o) => {
-                                    Ordering::Greater
-                                }
-                                _ => Ordering::Less
-                            };
-                        }
+                    (v1, v2) if are_digits(v1, v2) => match compare_digits(first_chars, second_chars) {
+                        Ordering::Less => return Ordering::Less,
                         Ordering::Equal => continue,
-                        Ordering::Greater => {
-                            first_chars.next().unwrap();
-                            second_chars.next().unwrap();
-                            return match (first_chars.peek(), second_chars.peek()) {
-                                (None, Some(c)) if is_digit(c) => {
-                                    Ordering::Less
-                                }
-                                (Some(o), Some(c)) if is_digit(c) && !is_digit(o) => {
-                                    Ordering::Less
-                                }
-                                _ => Ordering::Greater
-                            };
-                        }
-                    }
+                        Ordering::Greater => return Ordering::Greater,
+                    },
                     ('[', ']') => return Ordering::Greater,
                     (']', '[') => return Ordering::Less,
-                    ('[', ',') => panic!(),
                     (',', ']') => return Ordering::Greater,
                     (']', ',') => return Ordering::Less,
                     (c, ']') if is_digit(c) => return Ordering::Greater,
