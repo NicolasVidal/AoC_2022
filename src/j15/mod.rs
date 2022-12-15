@@ -70,30 +70,47 @@ fn guess_at_line_p2(s: &str, p2_range: RangeInclusive<i32>) -> usize {
         sonars.push((y, x, range));
     }
 
-    for &(ss_row, ss_col, ss_range) in sonars.iter() {
-        for rel_col in 0..=(ss_range + 1) {
-            let rel_row = (ss_range + 1) - rel_col;
-            let points = [
-                (ss_row + rel_row, ss_col + rel_col),
-                (ss_row - rel_row, ss_col - rel_col),
-                (ss_row - rel_row, ss_col + rel_col),
-                (ss_row + rel_row, ss_col - rel_col),
-            ];
-            'points: for (row, col) in points {
-                for &(s_row, s_col, range) in sonars.iter() {
-                    if range >= (s_row - row).abs() + (s_col - col).abs()
-                        || !p2_range.contains(&row)
-                        || !p2_range.contains(&col)
-                    {
-                        continue 'points;
+    for &(s1_y, s1_x, range1) in sonars.iter() {
+        for &(s2_y, s2_x, range2) in sonars.iter() {
+            if s2_x - s1_x + s2_y - s1_y == range1 + range2 + 2 {
+                'vert: for it in 0..=(range1 + 1) {
+                    let col = it + s1_x;
+                    let row = range1 + 1 - it + s1_y;
+
+                    for &(s_row, s_col, range) in sonars.iter() {
+                        if range >= (s_row - row).abs() + (s_col - col).abs()
+                            || !p2_range.contains(&row)
+                            || !p2_range.contains(&col)
+                        {
+                            continue 'vert;
+                        }
                     }
+
+                    return col as usize * 4_000_000 + row as usize;
                 }
-                return col as usize * 4_000_000 + row as usize;
+            }
+
+            if s2_x - s1_x + s1_y - s2_y == range1 + range2 + 2 {
+                'vert: for it in 0..=(range1 + 1) {
+                    let col = it + s1_x;
+                    let row = -range1 - 1 + it + s1_y;
+
+                    for &(s_row, s_col, range) in sonars.iter() {
+                        if range >= (s_row - row).abs() + (s_col - col).abs()
+                            || !p2_range.contains(&row)
+                            || !p2_range.contains(&col)
+                        {
+                            continue 'vert;
+                        }
+                    }
+
+                    return col as usize * 4_000_000 + row as usize;
+                }
             }
         }
     }
 
-    panic!("Hidden beacon not found, this should not happen !");
+    panic!()
 }
 
 #[allow(unused)]
