@@ -1,12 +1,12 @@
-use std::collections::HashSet;
 use std::ops::RangeInclusive;
 use std::str::FromStr;
 
 use smallvec::{smallvec, SmallVec};
 
-fn guess_at_line(s: &str, target_line: i32) -> Option<usize> {
-    let mut set = HashSet::with_capacity(5127798);
-    let mut forbidden_beacons_on_line = HashSet::with_capacity(1);
+fn guess_at_line(s: &str, target_line: i32) -> usize {
+    let mut ranges: SmallVec<[RangeInclusive<i32>; 32]> = smallvec![];
+    let mut ranges_sec: SmallVec<[RangeInclusive<i32>; 32]> = smallvec![];
+    let mut beacons_column_on_lines: SmallVec<[i32; 32]> = smallvec![];
     for line in s.lines() {
         let mut parts = line.split('=');
         parts.next().unwrap();
@@ -19,20 +19,44 @@ fn guess_at_line(s: &str, target_line: i32) -> Option<usize> {
 
         let over_reach = (distance) - (y - target_line).abs();
 
-        if b_y == target_line {
-            forbidden_beacons_on_line.insert(b_x);
+        if b_y == target_line && !beacons_column_on_lines.contains(&b_x) {
+            beacons_column_on_lines.push(b_x);
         }
 
-        for col in 0..=over_reach {
-            set.insert(x + col);
-            set.insert(x - col);
+        if over_reach < 0 {
+            continue;
+        }
+
+        let candidate_range = (x - over_reach)..=(x + over_reach);
+        ranges.push(candidate_range);
+        let mut old_count = ranges.len();
+        loop {
+            for candidate_range in ranges.drain(..) {
+                let mut replaced = false;
+                for range in ranges_sec.iter_mut() {
+                    if range.start() <= candidate_range.start() && range.end() >= candidate_range.start() ||
+                        candidate_range.start() <= range.start() && candidate_range.end() >= range.start() {
+                        let new_range = (*range.start().min(candidate_range.start()))..=*(range.end().max(candidate_range.end()));
+                        let _ = std::mem::replace(range, new_range);
+                        replaced = true;
+                        break;
+                    }
+                }
+                if !replaced {
+                    ranges_sec.push(candidate_range);
+                }
+            }
+            std::mem::swap(&mut ranges, &mut ranges_sec);
+            if old_count == ranges.len() {
+                break;
+            }
+            old_count = ranges.len();
         }
     }
-
-    Some(set.len() - set.intersection(&forbidden_beacons_on_line).count())
+    ranges.into_iter().flatten().count() - beacons_column_on_lines.len()
 }
 
-fn guess_at_line_p2(s: &str, p2_range: RangeInclusive<i32>) -> Option<usize> {
+fn guess_at_line_p2(s: &str, p2_range: RangeInclusive<i32>) -> usize {
     let mut sonars: SmallVec<[(i32, i32, i32); 32]> = smallvec![];
     for line in s.lines() {
         let mut parts = line.split('=');
@@ -64,7 +88,7 @@ fn guess_at_line_p2(s: &str, p2_range: RangeInclusive<i32>) -> Option<usize> {
                         continue 'points;
                     }
                 }
-                return Some(col as usize * 4_000_000 + row as usize);
+                return col as usize * 4_000_000 + row as usize;
             }
         }
     }
@@ -74,7 +98,7 @@ fn guess_at_line_p2(s: &str, p2_range: RangeInclusive<i32>) -> Option<usize> {
 
 #[allow(unused)]
 pub fn _p1(s: &str, target_line: i32) -> usize {
-    guess_at_line(s, target_line).unwrap()
+    guess_at_line(s, target_line)
 }
 
 #[allow(unused)]
@@ -84,11 +108,7 @@ pub fn p1() -> usize {
 
 #[allow(unused)]
 pub fn _p2(s: &str, search_space: RangeInclusive<i32>) -> usize {
-    match guess_at_line_p2(s, search_space) {
-        None => {}
-        Some(v) => { return v; }
-    }
-    panic!()
+    guess_at_line_p2(s, search_space)
 }
 
 #[allow(unused)]
