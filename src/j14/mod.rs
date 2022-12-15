@@ -40,8 +40,8 @@ fn get_row_and_col_min_max(s: &str) -> (i32, i32, i32, i32) {
 }
 
 #[inline(always)]
-fn fill_rocks(s: &str, row_min: i32, col_min: i32, rows: i32, cols: i32) -> SmallVec<[CellType; 11270]> {
-    let mut cells: SmallVec<[CellType; 11270]> = smallvec![];
+fn fill_rocks<const EXPECTED_CELLS_LENGTH: usize>(s: &str, row_min: i32, col_min: i32, rows: i32, cols: i32) -> SmallVec<[CellType; EXPECTED_CELLS_LENGTH]> {
+    let mut cells: SmallVec<[CellType; EXPECTED_CELLS_LENGTH]> = smallvec![];
 
     for _ in 0..(rows * cols) {
         cells.push(CellType::Empty);
@@ -85,7 +85,7 @@ fn fill_rocks(s: &str, row_min: i32, col_min: i32, rows: i32, cols: i32) -> Smal
 
 #[inline(always)]
 #[allow(unused)]
-fn show_sand_world(rows: i32, cols: i32, cells: &mut SmallVec<[CellType; 11270]>) {
+fn show_sand_world<const EXPECTED_CELLS_LENGTH: usize>(rows: i32, cols: i32, cells: &mut SmallVec<[CellType; EXPECTED_CELLS_LENGTH]>) {
     dbg!((rows, cols));
     for row in 0..rows {
         for col in 0..cols {
@@ -101,7 +101,7 @@ fn show_sand_world(rows: i32, cols: i32, cells: &mut SmallVec<[CellType; 11270]>
 }
 
 #[inline(always)]
-fn drop_sand_until_filled_or_fall_off(row_min: i32, col_min: i32, rows: i32, cols: i32, cells: &mut SmallVec<[CellType; 11270]>) -> usize {
+fn drop_sand_until_filled_or_fall_off<const EXPECTED_CELLS_LENGTH: usize>(row_min: i32, col_min: i32, rows: i32, cols: i32, cells: &mut SmallVec<[CellType; EXPECTED_CELLS_LENGTH]>) -> usize {
     let mut rest_units = 0;
     'outer: loop {
         let mut sand_coord = (0 - row_min, 500 - col_min);
@@ -159,13 +159,14 @@ fn compute_rows_and_cols(row_min: i32, row_max: i32, col_min: i32, col_max: i32)
 
 #[allow(unused)]
 pub fn _p1(s: &str) -> usize {
+    const EXPECTED_CELLS_LENGTH: usize = 11270;
     let (mut row_min, mut row_max, mut col_min, mut col_max) = get_row_and_col_min_max(s);
 
     let (rows, cols) = compute_rows_and_cols(row_min, row_max, col_min, col_max);
 
-    let mut cells = fill_rocks(s, row_min, col_min, rows, cols);
+    let mut cells = fill_rocks::<EXPECTED_CELLS_LENGTH>(s, row_min, col_min, rows, cols);
 
-    drop_sand_until_filled_or_fall_off(row_min, col_min, rows, cols, &mut cells)
+    drop_sand_until_filled_or_fall_off::<EXPECTED_CELLS_LENGTH>(row_min, col_min, rows, cols, &mut cells)
 }
 
 #[allow(unused)]
@@ -175,6 +176,7 @@ pub fn p1() -> usize {
 
 #[allow(unused)]
 pub fn _p2(s: &str) -> usize {
+    const EXPECTED_CELLS_LENGTH: usize = 53301;
     let (mut row_min, mut row_max, mut col_min, mut col_max) = get_row_and_col_min_max(s);
 
     // Increase world size
@@ -184,7 +186,7 @@ pub fn _p2(s: &str) -> usize {
 
     let (rows, cols) = compute_rows_and_cols(row_min, row_max, col_min, col_max);
 
-    let mut cells = fill_rocks(s, row_min, col_min, rows, cols);
+    let mut cells = fill_rocks::<EXPECTED_CELLS_LENGTH>(s, row_min, col_min, rows, cols);
 
     // Fill bottom with rocks
     for col in 0..cols {
