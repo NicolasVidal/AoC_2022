@@ -1,3 +1,4 @@
+mod j17;
 mod j16;
 mod j15;
 mod j14;
@@ -148,5 +149,10 @@ fn main() {
     println!("p1");
     println!("{}", j16::p1());
     println!("p2");
+    println!("J17 -----------------------------------------------------");
+    println!("p1");
+    println!("{}", j17::p1());
+    println!("p2");
+    println!("{}", j17::p2());
     println!("{}", j16::p2());
 }
