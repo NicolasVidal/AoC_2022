@@ -1,6 +1,6 @@
 use std::fmt::{Display, Formatter, Write};
+
 use smallvec::{SmallVec, smallvec};
-use tqdm::tqdm;
 
 #[derive(Eq, PartialEq, Debug)]
 enum CellType {
@@ -19,8 +19,11 @@ impl Display for CellType {
 
 const EXPECTED_MAX_ROWS: usize = 20000;
 
+const CHECK_PERIOD: usize = 500;
+
 fn simulation(s: &str, num_rocks: usize) -> usize {
-    // let mut chambers: SmallVec<[SmallVec<[CellType; EXPECTED_CHAMBER_SIZE]>; 100]> = smallvec![];
+    let mut y_top_history: SmallVec<[usize; 200]> = smallvec![];
+
     let mut chamber: SmallVec<[SmallVec<[CellType; 7]>; EXPECTED_MAX_ROWS]> = smallvec![];
     for row in 0..EXPECTED_MAX_ROWS {
         chamber.push(smallvec![]);
@@ -29,7 +32,6 @@ fn simulation(s: &str, num_rocks: usize) -> usize {
         }
     }
 
-    let mut old_rock_count = 0;
     let mut rock_count = 0;
 
     let mut commands = s.chars().peekable();
@@ -41,8 +43,6 @@ fn simulation(s: &str, num_rocks: usize) -> usize {
     let mut rock_type = 0;
 
     let mut falling_rock_cells: SmallVec<[(usize, usize); 5]> = smallvec![];
-
-    // let mut counter = tqdm(0..num_rocks);
 
     while rock_count < num_rocks {
         // Spawn rock
@@ -101,80 +101,6 @@ fn simulation(s: &str, num_rocks: usize) -> usize {
                     }
                 }
                 None => {
-                    // let diff = top_y - old_top_y;
-                    // old_top_y = top_y;
-                    // match old_top_y_differences.iter().rev().find_position(|elt| **elt == diff) {
-                    //     None => {
-                    //         old_top_y_differences.push(diff);
-                    //         old_top_y_rows.push(top_y);
-                    //         old_rocks.push(rock_count);
-                    //     }
-                    //     Some((pos, _)) => {
-                    //         let origin_pos = old_top_y_differences.len() - 1 - pos;
-                    //         old_top_y_differences.push(diff);
-                    //         old_top_y_rows.push(top_y);
-                    //         old_rocks.push(rock_count);
-                    //
-                    //         if pos * 2 < old_top_y_differences.len() &&
-                    //             (0..=pos).all(|idx| old_top_y_differences[origin_pos - idx] ==
-                    //                 old_top_y_differences[old_top_y_differences.len() - 1 - idx]) {
-                    //             println!("Found sequence : {}", old_top_y_differences.iter().skip(
-                    //                 old_top_y_differences.len() - 1 -
-                    //                     pos).join(","));
-                    //             let mut sequence:SmallVec<[usize; 100]> = smallvec![];
-                    //             for elt in old_top_y_differences
-                    //                 .iter()
-                    //                 .skip(old_top_y_differences.len() - 1 - pos) {
-                    //                 sequence.push(*elt)
-                    //             }
-                    //
-                    //             // dbg!(origin_pos);
-                    //             // dbg!(pos);
-                    //             // dbg!(&old_top_y_differences);
-                    //             // dbg!(&old_top_y_rows);
-                    //
-                    //             let idx_start = old_top_y_differences.len() - 1 - pos - sequence.len() - 1;
-                    //             let idx_end = old_top_y_differences.len() - 1 - pos - 1;
-                    //
-                    //             // dbg!(idx_start);
-                    //             // dbg!(idx_end);
-                    //             //
-                    //             // dbg!(old_top_y_rows[old_top_y_differences.len() - 1 - pos]);
-                    //             // dbg!(old_top_y_rows[old_top_y_differences.len() - 1 - pos * 2]);
-                    //
-                    //             let oldest_start = old_top_y_rows[old_top_y_differences.len() - 1 - pos - sequence.len() - 1];
-                    //             let seq_diff = old_top_y_rows[old_top_y_differences.len() - 1 - pos - 1] - oldest_start;
-                    //
-                    //             // dbg!(old_rocks[idx_start]);
-                    //             // dbg!(old_rocks[idx_end]);
-                    //
-                    //             // print_chamber_part(&chamber, oldest_start, oldest_start + 10);
-                    //             // print_chamber_part(&chamber, oldest_start + seq_diff, oldest_start + seq_diff  + 10);
-                    //
-                    //             let dropped = 0;
-                    //             for row in oldest_start..chamber.len() {
-                    //                 if chamber[row - dropped] == chamber[(row - dropped + seq_diff)] {
-                    //                     // println!("{:?}", chamber[row - dropped].iter().join(""));
-                    //                     // println!("{:?}", chamber[(row - dropped + seq_diff)].iter().join(""));
-                    //                     chamber.remove(row);
-                    //                     let mut empty = smallvec![];
-                    //                     for _ in 0..7 {
-                    //                         empty.push(CellType::Empty)
-                    //                     }
-                    //                     chamber.push(empty);
-                    //                 } else {
-                    //                     break;
-                    //                 }
-                    //             }
-                    //             top_y -= dropped;
-                    //             old_top_y = top_y;
-                    //
-                    //             for _ in old_rocks.drain((idx_start + sequence.len())..) {}
-                    //             for _ in old_top_y_differences.drain((idx_start +  sequence.len())..) {}
-                    //             for _ in old_top_y_rows.drain((idx_start + sequence.len())..) {}
-                    //         }
-                    //     }
-                    // }
                     commands = s.chars().peekable();
                     continue;
                 }
@@ -202,14 +128,14 @@ fn simulation(s: &str, num_rocks: usize) -> usize {
 
         rock_count += 1;
 
-        if top_y >= 19500 {
+        if top_y >= EXPECTED_MAX_ROWS - 10 {
             let mut mask = [false; 7];
             let mut max_row = 0;
 
             for row in (0..top_y).rev() {
-                for col in 0..7 {
+                for (col, m) in mask.iter_mut().enumerate() {
                     if chamber[row][col] == CellType::Fixed {
-                        mask[col] = true;
+                        *m = true;
                     }
                 }
                 if mask.iter().all(|elt| *elt) {
@@ -226,12 +152,28 @@ fn simulation(s: &str, num_rocks: usize) -> usize {
 
             dropped_lines += max_row;
         }
-        if rock_count % 100000 == 0 {
-            // counter.update(rock_count as isize - old_rock_count as isize);
-            old_rock_count = rock_count;
-            println!("{},", (top_y + dropped_lines) - old_top_y);
+
+        // Check for periodicity
+        if rock_count % CHECK_PERIOD == 0 {
+            y_top_history.push((top_y + dropped_lines) - old_top_y);
+
+            if y_top_history.len() >= 7 {
+                let first_window = &y_top_history[1..=3];
+                for idx in 4..(y_top_history.len() - 3) {
+                    if first_window == &y_top_history[idx..(idx + 3)] {
+                        let period = idx - 1;
+                        let period_counts = (num_rocks - CHECK_PERIOD) / CHECK_PERIOD;
+                        let div = period_counts / period;
+                        let remainder = period_counts % period;
+                        let total = y_top_history[0] + div * y_top_history[1..(1 + period)].iter().sum::<usize>()
+                            + y_top_history[1..(1 + remainder)].iter().sum::<usize>();
+
+                        return total;
+                    }
+                }
+            }
+
             old_top_y = top_y + dropped_lines
-            // println!()
         }
     }
 
@@ -259,24 +201,16 @@ fn print_chamber(chamber: &mut SmallVec<[CellType; 140000]>,
     println!();
 }
 
-
-// 1514285714288 : too low
-// 1561739130391
 #[allow(unused)]
 fn print_chamber_part(chamber: &SmallVec<[SmallVec<[CellType; 7]>; EXPECTED_MAX_ROWS]>,
                       start_row: usize,
                       end_row: usize) {
     for row in (start_row..=end_row).rev() {
         for col in 0..7 {
-            // if falling_rock_cells.contains(&(row, col)) {
-            //     print!("@");
-            // } else
-            {
-                print!("{}", match chamber[row][col] {
-                    CellType::Empty => '.',
-                    CellType::Fixed => '#',
-                });
-            }
+            print!("{}", match chamber[row][col] {
+                CellType::Empty => '.',
+                CellType::Fixed => '#',
+            });
         }
         println!();
     }
@@ -321,6 +255,6 @@ mod j17_tests {
     #[allow(unused)]
     fn test_p2() {
         assert_eq!(1514285714288, _p2(include_str!("j17_test.txt")));
-        assert_eq!(42, _p2(include_str!("j17.txt")));
+        assert_eq!(1561739130391, _p2(include_str!("j17.txt")));
     }
 }
