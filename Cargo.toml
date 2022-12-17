@@ -21,6 +21,7 @@ peg = "0.8.1"
 rand = "0.8.5"
 tracking-allocator = "0.4.0"
 timeit = "0.1.2"
+tqdm = "0.4.2"
 
 [[bin]]
 name = "produce_timings"

@@ -1,6 +1,6 @@
 use std::fmt::{Display, Formatter, Write};
-use itertools::Itertools;
 use smallvec::{SmallVec, smallvec};
+use tqdm::tqdm;
 
 #[derive(Eq, PartialEq, Debug)]
 enum CellType {
@@ -17,30 +17,32 @@ impl Display for CellType {
     }
 }
 
-const EXPECTED_CHAMBER_SIZE: usize = 7 * 200000;
+const EXPECTED_MAX_ROWS: usize = 20000;
 
 fn simulation(s: &str, num_rocks: usize) -> usize {
     // let mut chambers: SmallVec<[SmallVec<[CellType; EXPECTED_CHAMBER_SIZE]>; 100]> = smallvec![];
-    let mut chamber: SmallVec<[CellType; EXPECTED_CHAMBER_SIZE]> = smallvec![];
-    for _ in 0..EXPECTED_CHAMBER_SIZE {
-        chamber.push(CellType::Empty);
+    let mut chamber: SmallVec<[SmallVec<[CellType; 7]>; EXPECTED_MAX_ROWS]> = smallvec![];
+    for row in 0..EXPECTED_MAX_ROWS {
+        chamber.push(smallvec![]);
+        for _ in 0..7 {
+            chamber[row].push(CellType::Empty);
+        }
     }
 
+    let mut old_rock_count = 0;
     let mut rock_count = 0;
 
     let mut commands = s.chars().peekable();
 
     let mut old_top_y = 0;
     let mut top_y = 0;
+    let mut dropped_lines = 0;
 
     let mut rock_type = 0;
 
     let mut falling_rock_cells: SmallVec<[(usize, usize); 5]> = smallvec![];
 
-    let mut old_rocks: SmallVec<[usize; 100]> = smallvec![];
-    let mut old_top_y_differences: SmallVec<[usize; 100]> = smallvec![];
-    let mut old_top_y_rows: SmallVec<[usize; 100]> = smallvec![];
-    let mut matching_sequence: Option<SmallVec<[usize; 100]>> = None;
+    // let mut counter = tqdm(0..num_rocks);
 
     while rock_count < num_rocks {
         // Spawn rock
@@ -84,7 +86,7 @@ fn simulation(s: &str, num_rocks: usize) -> usize {
             match commands.next() {
                 Some('>') => {
                     if falling_rock_cells.iter().all(|(row, col)| *col + 1 < 7 &&
-                        chamber[*row * 7 + (*col + 1)] == CellType::Empty) {
+                        chamber[*row][(*col + 1)] == CellType::Empty) {
                         for (_, col) in falling_rock_cells.iter_mut() {
                             *col += 1;
                         }
@@ -92,79 +94,87 @@ fn simulation(s: &str, num_rocks: usize) -> usize {
                 }
                 Some('<') => {
                     if falling_rock_cells.iter().all(|(row, col)| *col > 0 &&
-                        chamber[*row * 7 + (*col - 1)] == CellType::Empty) {
+                        chamber[*row][(*col - 1)] == CellType::Empty) {
                         for (_, col) in falling_rock_cells.iter_mut() {
                             *col -= 1;
                         }
                     }
                 }
                 None => {
-                    let diff = top_y - old_top_y;
-                    old_top_y = top_y;
-                    if matching_sequence == None {
-                        match old_top_y_differences.iter().rev().find_position(|elt| **elt == diff) {
-                            None => {
-                                old_top_y_differences.push(diff);
-                                old_top_y_rows.push(top_y);
-                                old_rocks.push(rock_count);
-                            }
-                            Some((pos, _)) => {
-                                let origin_pos = old_top_y_differences.len() - 1 - pos;
-                                old_top_y_differences.push(diff);
-                                old_top_y_rows.push(top_y);
-                                old_rocks.push(rock_count);
-
-                                if pos * 2 < old_top_y_differences.len() &&
-                                    (0..=pos).all(|idx| old_top_y_differences[origin_pos - idx] ==
-                                        old_top_y_differences[old_top_y_differences.len() - 1 - idx]) {
-                                    println!("Found sequence : {}", old_top_y_differences.iter().skip(
-                                        old_top_y_differences.len() - 1 -
-                                            pos).join(","));
-                                    let mut sequence = smallvec![];
-                                    for elt in old_top_y_differences
-                                        .iter()
-                                        .skip(old_top_y_differences.len() - 1 - pos) {
-                                        sequence.push(*elt)
-                                    }
-
-                                    dbg!(origin_pos);
-                                    dbg!(pos);
-                                    dbg!(&old_top_y_differences);
-                                    dbg!(&old_top_y_rows);
-
-                                    let idx_start = old_top_y_differences.len() - 1 - pos - sequence.len() - 1;
-                                    let idx_end = old_top_y_differences.len() - 1 - pos - 1;
-
-                                    dbg!(idx_start);
-                                    dbg!(idx_end);
-
-                                    dbg!(old_top_y_rows[old_top_y_differences.len() - 1 - pos]);
-                                    dbg!(old_top_y_rows[old_top_y_differences.len() - 1 - pos * 2]);
-
-                                    let oldest_start = old_top_y_rows[old_top_y_differences.len() - 1 - pos - sequence.len() - 1];
-                                    let seq_diff = old_top_y_rows[old_top_y_differences.len() - 1 - pos - 1] - oldest_start;
-
-                                    dbg!(old_rocks[oldest_start]);
-                                    dbg!(old_rocks[old_top_y_differences.len() - 1 - pos * 2]);
-
-                                    print_chamber_part(&chamber, oldest_start, oldest_start + 10);
-                                    print_chamber_part(&chamber, oldest_start + seq_diff, oldest_start + seq_diff  + 10);
-
-                                    for row in oldest_start..(oldest_start + seq_diff) {
-                                        println!("{}", chamber.iter().skip(row * 7).take(7).join(""));
-                                        println!("{}", chamber.iter().skip((row + seq_diff) * 7).take(7).join(""));
-                                        for col in 0..7 {
-                                            assert_eq!(chamber[row * 7 + col], chamber[(row + seq_diff) * 7 + col]);
-                                        }
-                                        println!()
-                                    }
-
-                                    panic!();
-                                    matching_sequence = Some(sequence);
-                                }
-                            }
-                        }
-                    }
+                    // let diff = top_y - old_top_y;
+                    // old_top_y = top_y;
+                    // match old_top_y_differences.iter().rev().find_position(|elt| **elt == diff) {
+                    //     None => {
+                    //         old_top_y_differences.push(diff);
+                    //         old_top_y_rows.push(top_y);
+                    //         old_rocks.push(rock_count);
+                    //     }
+                    //     Some((pos, _)) => {
+                    //         let origin_pos = old_top_y_differences.len() - 1 - pos;
+                    //         old_top_y_differences.push(diff);
+                    //         old_top_y_rows.push(top_y);
+                    //         old_rocks.push(rock_count);
+                    //
+                    //         if pos * 2 < old_top_y_differences.len() &&
+                    //             (0..=pos).all(|idx| old_top_y_differences[origin_pos - idx] ==
+                    //                 old_top_y_differences[old_top_y_differences.len() - 1 - idx]) {
+                    //             println!("Found sequence : {}", old_top_y_differences.iter().skip(
+                    //                 old_top_y_differences.len() - 1 -
+                    //                     pos).join(","));
+                    //             let mut sequence:SmallVec<[usize; 100]> = smallvec![];
+                    //             for elt in old_top_y_differences
+                    //                 .iter()
+                    //                 .skip(old_top_y_differences.len() - 1 - pos) {
+                    //                 sequence.push(*elt)
+                    //             }
+                    //
+                    //             // dbg!(origin_pos);
+                    //             // dbg!(pos);
+                    //             // dbg!(&old_top_y_differences);
+                    //             // dbg!(&old_top_y_rows);
+                    //
+                    //             let idx_start = old_top_y_differences.len() - 1 - pos - sequence.len() - 1;
+                    //             let idx_end = old_top_y_differences.len() - 1 - pos - 1;
+                    //
+                    //             // dbg!(idx_start);
+                    //             // dbg!(idx_end);
+                    //             //
+                    //             // dbg!(old_top_y_rows[old_top_y_differences.len() - 1 - pos]);
+                    //             // dbg!(old_top_y_rows[old_top_y_differences.len() - 1 - pos * 2]);
+                    //
+                    //             let oldest_start = old_top_y_rows[old_top_y_differences.len() - 1 - pos - sequence.len() - 1];
+                    //             let seq_diff = old_top_y_rows[old_top_y_differences.len() - 1 - pos - 1] - oldest_start;
+                    //
+                    //             // dbg!(old_rocks[idx_start]);
+                    //             // dbg!(old_rocks[idx_end]);
+                    //
+                    //             // print_chamber_part(&chamber, oldest_start, oldest_start + 10);
+                    //             // print_chamber_part(&chamber, oldest_start + seq_diff, oldest_start + seq_diff  + 10);
+                    //
+                    //             let dropped = 0;
+                    //             for row in oldest_start..chamber.len() {
+                    //                 if chamber[row - dropped] == chamber[(row - dropped + seq_diff)] {
+                    //                     // println!("{:?}", chamber[row - dropped].iter().join(""));
+                    //                     // println!("{:?}", chamber[(row - dropped + seq_diff)].iter().join(""));
+                    //                     chamber.remove(row);
+                    //                     let mut empty = smallvec![];
+                    //                     for _ in 0..7 {
+                    //                         empty.push(CellType::Empty)
+                    //                     }
+                    //                     chamber.push(empty);
+                    //                 } else {
+                    //                     break;
+                    //                 }
+                    //             }
+                    //             top_y -= dropped;
+                    //             old_top_y = top_y;
+                    //
+                    //             for _ in old_rocks.drain((idx_start + sequence.len())..) {}
+                    //             for _ in old_top_y_differences.drain((idx_start +  sequence.len())..) {}
+                    //             for _ in old_top_y_rows.drain((idx_start + sequence.len())..) {}
+                    //         }
+                    //     }
+                    // }
                     commands = s.chars().peekable();
                     continue;
                 }
@@ -172,7 +182,7 @@ fn simulation(s: &str, num_rocks: usize) -> usize {
             }
 
             if falling_rock_cells.iter().all(|(row, col)| *row > 0 &&
-                chamber[(row - 1) * 7 + col] == CellType::Empty) {
+                chamber[*row - 1][*col] == CellType::Empty) {
                 for (row, _) in falling_rock_cells.iter_mut() {
                     *row -= 1;
                 }
@@ -183,7 +193,7 @@ fn simulation(s: &str, num_rocks: usize) -> usize {
 
         // Fix cells
         for (row, col) in falling_rock_cells.drain(..) {
-            chamber[row * 7 + col] = CellType::Fixed;
+            chamber[row][col] = CellType::Fixed;
             top_y = top_y.max(row + 1);
         }
 
@@ -192,13 +202,40 @@ fn simulation(s: &str, num_rocks: usize) -> usize {
 
         rock_count += 1;
 
+        if top_y >= 19500 {
+            let mut mask = [false; 7];
+            let mut max_row = 0;
 
-        if let Some(seq) = &matching_sequence {
-            // let line = y_top
+            for row in (0..top_y).rev() {
+                for col in 0..7 {
+                    if chamber[row][col] == CellType::Fixed {
+                        mask[col] = true;
+                    }
+                }
+                if mask.iter().all(|elt| *elt) {
+                    max_row = row;
+                    break;
+                }
+            }
+
+            for _ in chamber.drain(..max_row) {}
+            for _ in 0..max_row {
+                chamber.push(SmallVec::from([(); 7].map(|_| CellType::Empty)))
+            }
+            top_y -= max_row;
+
+            dropped_lines += max_row;
+        }
+        if rock_count % 100000 == 0 {
+            // counter.update(rock_count as isize - old_rock_count as isize);
+            old_rock_count = rock_count;
+            println!("{},", (top_y + dropped_lines) - old_top_y);
+            old_top_y = top_y + dropped_lines
+            // println!()
         }
     }
 
-    top_y
+    top_y + dropped_lines
 }
 
 #[allow(unused)]
@@ -223,18 +260,19 @@ fn print_chamber(chamber: &mut SmallVec<[CellType; 140000]>,
 }
 
 
+// 1514285714288 : too low
+// 1561739130391
 #[allow(unused)]
-fn print_chamber_part(chamber: &SmallVec<[CellType; EXPECTED_CHAMBER_SIZE]>,
+fn print_chamber_part(chamber: &SmallVec<[SmallVec<[CellType; 7]>; EXPECTED_MAX_ROWS]>,
                       start_row: usize,
                       end_row: usize) {
     for row in (start_row..=end_row).rev() {
-
         for col in 0..7 {
             // if falling_rock_cells.contains(&(row, col)) {
             //     print!("@");
             // } else
             {
-                print!("{}", match chamber[row * 7 + col] {
+                print!("{}", match chamber[row][col] {
                     CellType::Empty => '.',
                     CellType::Fixed => '#',
                 });
@@ -258,7 +296,7 @@ pub fn p1() -> usize {
 
 #[allow(unused)]
 pub fn _p2(s: &str) -> usize {
-    simulation(s, 5000)
+    simulation(s, 1000000000000)
 }
 
 #[allow(unused)]
