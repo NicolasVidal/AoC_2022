@@ -23,7 +23,7 @@ fn copy_dir_all(src: impl AsRef<Path>, dst: impl AsRef<Path>) -> io::Result<()> 
 }
 
 fn main() {
-    let day = 17;
+    let day = 18;
 
     let day_name = format!("j{}", day);
 
