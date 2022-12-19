@@ -51,6 +51,17 @@ impl Node {
                 }
             }
 
+            if robot_idx < 3 {
+                let cost_max = self.bp.costs.iter().map(|elt| elt[robot_idx]).max().unwrap();
+                if cost_max <= self.robots[robot_idx] {
+                    continue;
+                }
+
+                if self.resources[robot_idx] > cost_max * self.time_left {
+                    continue;
+                }
+            }
+
             can_build.push(BuildRobot(robot_idx));
             if robot_idx == 3
             {
@@ -166,7 +177,7 @@ pub fn _p1(s: &str) -> usize {
     let mut sum = 0;
     for (idx, line) in s.lines().enumerate() {
         let bp = BluePrint::from_str(line);
-        let eval = dbg!(bp.evaluate::<24>());
+        let eval = bp.evaluate::<24>();
         sum += (idx + 1) * eval
     }
     sum
@@ -183,7 +194,7 @@ pub fn _p2(s: &str) -> usize {
     let mut product = 1;
     for (idx, line) in s.lines().enumerate().take(3) {
         let bp = BluePrint::from_str(line);
-        let eval = dbg!(bp.evaluate::<32>());
+        let eval = bp.evaluate::<32>();
         product *= eval
     }
     product
