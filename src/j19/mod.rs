@@ -1,12 +1,9 @@
 use std::hash::{Hash, Hasher};
 use std::str::FromStr;
 
-use itertools::Itertools;
 use smallvec::{SmallVec, smallvec};
 
 use crate::j19::Action::{BuildRobot, DoNothing};
-
-const MAX_MINUTES: usize = 24;
 
 #[derive(Clone, Debug)]
 struct Node {
@@ -14,28 +11,55 @@ struct Node {
     robots: [usize; 4],
     resources: [usize; 4],
     bp: BluePrint,
-    priority: [usize; 4],
+    #[allow(unused)]
+    strategy: [usize; 4],
 }
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, Hash, Eq, PartialEq)]
 enum Action {
     BuildRobot(usize),
     DoNothing,
 }
 
+
 impl Node {
+    #[allow(unused)]
+    pub fn compute_time_steps_to_get_robot<const MAX_MINUTES: usize>(&self, idx: usize) -> usize {
+        let costs = self.bp.costs[idx];
+        let production = self.robots;
+        let mut resources = self.resources;
+
+        for time_step in 0..MAX_MINUTES {
+            if resources.iter().zip(costs.iter()).all(|(r, c)| *r >= *c) {
+                return time_step;
+            }
+            for idx in 0..4 {
+                resources[idx] += production[idx];
+            }
+        }
+
+        usize::MAX
+    }
+
     pub fn available_actions(&self) -> SmallVec<[Action; 5]> {
         let mut can_build = smallvec![];
-        'robot_costs: for idx in 0..4 {
+
+        'robot_costs: for robot_idx in (0..4).rev() {
             for resource_idx in 0..3 {
-                if self.bp.costs[self.priority[idx]][resource_idx] > self.resources[resource_idx] {
+                if self.bp.costs[robot_idx][resource_idx] > self.resources[resource_idx] {
                     continue 'robot_costs;
                 }
             }
-            can_build.push(BuildRobot(self.priority[idx]));
-            return can_build;
+
+            can_build.push(BuildRobot(robot_idx));
+            if robot_idx == 3
+            {
+                return can_build;
+            }
         }
+
         can_build.push(DoNothing);
+
         can_build
     }
 
@@ -59,15 +83,24 @@ impl Node {
         self.time_left -= 1;
     }
 
-    fn depth_first_max(&self) -> usize {
+    fn depth_first_max(&self, best_score: &mut usize) -> usize {
         if self.is_game_over() {
+            if self.resources[3] > *best_score {
+                *best_score = self.resources[3];
+            }
+            return self.resources[3];
+        }
+
+        if (0..self.time_left).sum::<usize>() +
+            self.time_left * self.robots[3] +
+            self.resources[3] < *best_score {
             return self.resources[3];
         }
 
         self.available_actions().iter().map(|action| {
             let mut clone = self.clone();
             clone.act_with_action_id(action);
-            clone.depth_first_max()
+            clone.depth_first_max(best_score)
         }).max().unwrap()
     }
 }
@@ -90,78 +123,53 @@ impl BluePrint {
         let mut bp = BluePrint {
             costs: [[0; 3]; 4],
         };
-        let mut first_robot = splits.next().unwrap();
-        let ore_cost = usize::from_str(first_robot.split("costs ").skip(1)
-            .next().unwrap().split(' ').next().unwrap()).unwrap();
+        let first_robot = splits.next().unwrap();
+        let ore_cost = usize::from_str(first_robot.split("costs ").nth(1).unwrap().split(' ').next().unwrap()).unwrap();
         bp.costs[0][0] = ore_cost;
 
-        let mut second_robot = splits.next().unwrap();
-        let ore_cost = usize::from_str(second_robot.split("costs ").skip(1)
-            .next().unwrap().split(' ').next().unwrap()).unwrap();
+        let second_robot = splits.next().unwrap();
+        let ore_cost = usize::from_str(second_robot.split("costs ").nth(1).unwrap().split(' ').next().unwrap()).unwrap();
         bp.costs[1][0] = ore_cost;
 
-        let mut third_robot = splits.next().unwrap();
-        let mut resources = third_robot.split("costs ").skip(1)
-            .next().unwrap().split(' ');
+        let third_robot = splits.next().unwrap();
+        let mut resources = third_robot.split("costs ").nth(1).unwrap().split(' ');
         let ore_cost = usize::from_str(resources.next().unwrap()).unwrap();
-        let clay_cost = usize::from_str(resources.skip(2).next().unwrap()).unwrap();
+        let clay_cost = usize::from_str(resources.nth(2).unwrap()).unwrap();
         bp.costs[2][0] = ore_cost;
         bp.costs[2][1] = clay_cost;
 
-        let mut fouth_robot = splits.next().unwrap();
-        let mut resources = fouth_robot.split("costs ").skip(1)
-            .next().unwrap().split(' ');
+        let fouth_robot = splits.next().unwrap();
+        let mut resources = fouth_robot.split("costs ").nth(1).unwrap().split(' ');
         let ore_cost = usize::from_str(resources.next().unwrap()).unwrap();
-        let obsidian_cost = usize::from_str(resources.skip(2).next().unwrap()).unwrap();
+        let obsidian_cost = usize::from_str(resources.nth(2).unwrap()).unwrap();
         bp.costs[3][0] = ore_cost;
         bp.costs[3][2] = obsidian_cost;
         bp
     }
 
-    pub fn evaluate(&self) -> usize {
-        let mut permutations: SmallVec<[[usize; 4]; 24]> = smallvec![];
-        for one in 0..4 {
-            for two in 0..4 {
-                if one == two {
-                    continue
-                }
-                for three in 0..4 {
-                    if one == three || two == three {
-                        continue
-                    }
-                    for four in 0..4 {
-                        if one == four || two == four || three == four {
-                            continue
-                        }
-                        permutations.push([one, two, three, four])
-                    }
-                }
-            }
-        }
-        let mut max = 0;
-        for perm in permutations {
-            let mut root_node = Node {
-                time_left: MAX_MINUTES,
-                robots: Default::default(),
-                resources: Default::default(),
-                bp: self.clone(),
-                priority: perm,
-            };
-            root_node.robots[0] = 1;
-            dbg!(root_node.depth_first_max());
-            max = max.max(root_node.depth_first_max());
-        }
-        max
+    pub fn evaluate<const MAX_MINUTES: usize>(&self) -> usize {
+        let mut root_node = Node {
+            time_left: MAX_MINUTES,
+            robots: Default::default(),
+            resources: Default::default(),
+            bp: self.clone(),
+            strategy: [0, 0, 0, 0],
+        };
+        root_node.robots[0] = 1;
+        let mut best_score = 0usize;
+        root_node.depth_first_max(&mut best_score)
     }
 }
 
 #[allow(unused)]
 pub fn _p1(s: &str) -> usize {
-    for line in s.lines() {
+    let mut sum = 0;
+    for (idx, line) in s.lines().enumerate() {
         let bp = BluePrint::from_str(line);
-        dbg!(bp.evaluate());
+        let eval = dbg!(bp.evaluate::<24>());
+        sum += (idx + 1) * eval
     }
-    61
+    sum
 }
 
 
@@ -172,8 +180,13 @@ pub fn p1() -> usize {
 
 #[allow(unused)]
 pub fn _p2(s: &str) -> usize {
-    for line in s.lines() {}
-    42
+    let mut product = 1;
+    for (idx, line) in s.lines().enumerate().take(3) {
+        let bp = BluePrint::from_str(line);
+        let eval = dbg!(bp.evaluate::<32>());
+        product *= eval
+    }
+    product
 }
 
 #[allow(unused)]
@@ -190,14 +203,14 @@ mod j19_tests {
     #[test]
     #[allow(unused)]
     fn test_p1() {
-        assert_eq!(42, _p1(include_str!("j19_test.txt")));
-        assert_eq!(42, _p1(include_str!("j19.txt")));
+        assert_eq!(33, _p1(include_str!("j19_test.txt")));
+        assert_eq!(1262, _p1(include_str!("j19.txt")));
     }
 
     #[test]
     #[allow(unused)]
     fn test_p2() {
-        assert_eq!(42, _p2(include_str!("j19_test.txt")));
-        assert_eq!(42, _p2(include_str!("j19.txt")));
+        assert_eq!(3472, _p2(include_str!("j19_test.txt")));
+        assert_eq!(37191, _p2(include_str!("j19.txt")));
     }
 }

@@ -14,7 +14,7 @@ pub fn check_neighbour((x1, y1, z1): (i8, i8, i8),
 
     match world[x1 as usize][y1 as usize][z1 as usize] {
         CellType::Inside => {
-            if compute_check_trapped { 0 } else { 1 }
+            usize::from(!compute_check_trapped)
         }
         CellType::Rock => { 0 }
         CellType::Outside => { 1 }

@@ -196,7 +196,7 @@ impl<'a> State<'a> {
     }
 
     pub fn cost(&self) -> u32 {
-        self.current_score as u32
+        self.current_score
     }
 
     pub fn heuristic(&self) -> u32 {
