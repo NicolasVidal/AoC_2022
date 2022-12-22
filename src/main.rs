@@ -12,15 +12,6 @@ mod j12;
 mod j11;
 mod j10;
 mod j9;
-extern crate core;
-
-use std::alloc::System;
-
-#[allow(unused)]
-use tracking_allocator::{
-    AllocationGroupId, AllocationRegistry, AllocationTracker, Allocator,
-};
-
 mod j8;
 mod j7;
 mod j6;
@@ -29,6 +20,15 @@ mod j4;
 mod j3;
 mod j2;
 mod j1;
+
+extern crate core;
+
+use std::alloc::System;
+
+#[allow(unused)]
+use tracking_allocator::{
+    AllocationGroupId, AllocationRegistry, AllocationTracker, Allocator,
+};
 
 #[global_allocator]
 static GLOBAL: Allocator<System> = tracking_allocator::Allocator::system();
@@ -152,9 +152,9 @@ fn main() {
     AllocationRegistry::disable_tracking();
     println!("J16 -----------------------------------------------------");
     println!("p1");
-    // println!("{}", j16::p1());
+    println!("{}", j16::p1());
     println!("p2");
-    // println!("{}", j16::p2());
+    println!("{}", j16::p2());
     AllocationRegistry::enable_tracking();
     println!("J17 -----------------------------------------------------");
     println!("p1");
@@ -168,23 +168,23 @@ fn main() {
     println!("{}", j18::p2());
     println!("J19 -----------------------------------------------------");
     println!("p1");
-    // println!("{}", j19::p1());
+    println!("{}", j19::p1());
     println!("p2");
-    // println!("{}", j19::p2());
+    println!("{}", j19::p2());
     println!("J20 -----------------------------------------------------");
     println!("p1");
-    // println!("{}", j20::p1());
+    println!("{}", j20::p1());
     println!("p2");
-    // println!("{}", j20::p2());
+    println!("{}", j20::p2());
     println!("J21 -----------------------------------------------------");
     println!("p1");
     println!("{}", j21::p1());
     println!("p2");
     println!("{}", j21::p2());
-    AllocationRegistry::disable_tracking();
     println!("J22 -----------------------------------------------------");
     println!("p1");
     println!("{}", j22::p1());
     println!("p2");
     println!("{}", j22::p2());
+    AllocationRegistry::disable_tracking();
 }
