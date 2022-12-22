@@ -100,26 +100,24 @@ fn compute_value(node: &Node, nodes: &SmallVec<[Node; 3000]>) -> isize {
         Node::Unknown(_) => { panic!() }
         Node::Element(elt) => { *elt }
         Node::Plus(first, second) => {
-            compute_value(&nodes[*first], &nodes) +
-                compute_value(&nodes[*second], &nodes)
+            compute_value(&nodes[*first], nodes) +
+                compute_value(&nodes[*second], nodes)
         }
         Node::Minus(first, second) => {
-            compute_value(&nodes[*first], &nodes) -
-                compute_value(&nodes[*second], &nodes)
+            compute_value(&nodes[*first], nodes) -
+                compute_value(&nodes[*second], nodes)
         }
         Node::Times(first, second) => {
-            compute_value(&nodes[*first], &nodes) *
-                compute_value(&nodes[*second], &nodes)
+            compute_value(&nodes[*first], nodes) *
+                compute_value(&nodes[*second], nodes)
         }
         Node::Divide(first, second) => {
-            compute_value(&nodes[*first], &nodes) /
-                compute_value(&nodes[*second], &nodes)
+            compute_value(&nodes[*first], nodes) /
+                compute_value(&nodes[*second], nodes)
         }
         Node::Equal(first, second) => {
-            if compute_value(&nodes[*first], &nodes) ==
-                compute_value(&nodes[*second], &nodes) {
-                1
-            } else { 0 }
+            isize::from(compute_value(&nodes[*first], nodes) ==
+                compute_value(&nodes[*second], nodes))
         }
     }
 }
@@ -130,28 +128,28 @@ fn compute_value_true(node: &Node, nodes: &SmallVec<[Node; 3000]>) -> Option<isi
         Node::Unknown(_) => { panic!() }
         Node::Element(elt) => { Some(*elt) }
         Node::Plus(first, second) => {
-            compute_value_true(&nodes[*first], &nodes).zip(
-                compute_value_true(&nodes[*second], &nodes))
+            compute_value_true(&nodes[*first], nodes).zip(
+                compute_value_true(&nodes[*second], nodes))
                 .map(|(a, b)| a + b)
         }
         Node::Minus(first, second) => {
-            compute_value_true(&nodes[*first], &nodes).zip(
-                compute_value_true(&nodes[*second], &nodes))
+            compute_value_true(&nodes[*first], nodes).zip(
+                compute_value_true(&nodes[*second], nodes))
                 .map(|(a, b)| a - b)
         }
         Node::Times(first, second) => {
-            compute_value_true(&nodes[*first], &nodes).zip(
-                compute_value_true(&nodes[*second], &nodes))
+            compute_value_true(&nodes[*first], nodes).zip(
+                compute_value_true(&nodes[*second], nodes))
                 .map(|(a, b)| a * b)
         }
         Node::Divide(first, second) => {
-            compute_value_true(&nodes[*first], &nodes).zip(
-                compute_value_true(&nodes[*second], &nodes))
+            compute_value_true(&nodes[*first], nodes).zip(
+                compute_value_true(&nodes[*second], nodes))
                 .map(|(a, b)| a / b)
         }
         Node::Equal(first, second) => {
-            compute_value_true(&nodes[*first], &nodes).zip(
-                compute_value_true(&nodes[*second], &nodes))
+            compute_value_true(&nodes[*first], nodes).zip(
+                compute_value_true(&nodes[*second], nodes))
                 .filter(|(a, b)| {
                     *a == *b
                 })

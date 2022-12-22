@@ -98,15 +98,11 @@ fn execute_instruction(r: &mut usize, c: &mut usize, orientation: &mut Orientati
                                 Orientation::Left => { (row, col - 1) }
                                 Orientation::Up => { (row - 1, col) }
                             };
-                            if ghost_col < 0 {
-                                break;
-                            } else if ghost_col as usize >= grid[0].len() {
-                                break;
-                            } else if ghost_row < 0 {
-                                break;
-                            } else if ghost_row as usize >= grid.len() {
-                                break;
-                            } else if grid[ghost_row as usize][ghost_col as usize] == Cell::Void {
+                            if ghost_col < 0
+                                || ghost_col as usize >= grid[0].len()
+                                || ghost_row < 0
+                                || ghost_row as usize >= grid.len()
+                                || grid[ghost_row as usize][ghost_col as usize] == Cell::Void {
                                 break;
                             } else {
                                 (row, col) = (ghost_row, ghost_col);
@@ -180,10 +176,10 @@ pub fn _p1(s: &str) -> usize {
     }
 
     let mut val = 0;
-    for c in s.lines().skip(grid.len() + 1).next().unwrap().chars() {
+    for c in s.lines().nth(grid.len() + 1).unwrap().chars() {
         // for c in "10R1L10".chars() {
         match c {
-            c if c <= '9' && c >= '0' => {
+            c if ('0'..='9').contains(&c) => {
                 val = val * 10 + (c as u8 - b'0') as isize
             }
             'R' => {
@@ -250,7 +246,6 @@ fn apply_test_folding(r: &mut isize, c: &mut isize, orientation: &mut Orientatio
                 *r = 3 - *r % 4;
                 *c = 11;
                 *orientation = Orientation::Left;
-                return;
             }
         }
         Orientation::Down => {
@@ -276,7 +271,6 @@ fn apply_test_folding(r: &mut isize, c: &mut isize, orientation: &mut Orientatio
                 *r = 4 + *c % 4;
                 *c = 0;
                 *orientation = Orientation::Right;
-                return;
             }
         }
         Orientation::Left => {
@@ -296,7 +290,6 @@ fn apply_test_folding(r: &mut isize, c: &mut isize, orientation: &mut Orientatio
                 *c = 7 - *r % 4;
                 *r = 7;
                 *orientation = Orientation::Up;
-                return;
             }
         }
         Orientation::Up => {
@@ -307,7 +300,7 @@ fn apply_test_folding(r: &mut isize, c: &mut isize, orientation: &mut Orientatio
                 return;
             }
             if *c >= 4 && *c <= 7 {
-                *r = 0 + *c % 4;
+                *r = *c % 4;
                 *c = 8;
                 *orientation = Orientation::Right;
                 return;
@@ -322,7 +315,6 @@ fn apply_test_folding(r: &mut isize, c: &mut isize, orientation: &mut Orientatio
                 *r = 7 - *c % 4;
                 *c = 11;
                 *orientation = Orientation::Left;
-                return;
             }
         }
     }
@@ -353,7 +345,6 @@ fn apply_folding(r: &mut isize, c: &mut isize, orientation: &mut Orientation) {
                 *c = 50 + *r % 50;
                 *r = 149;
                 *orientation = Orientation::Up;
-                return;
             }
         }
         Orientation::Down => {
@@ -373,7 +364,6 @@ fn apply_folding(r: &mut isize, c: &mut isize, orientation: &mut Orientation) {
                 *r = 50 + *c % 50;
                 *c = 99;
                 *orientation = Orientation::Left;
-                return;
             }
         }
         Orientation::Left => {
@@ -384,7 +374,7 @@ fn apply_folding(r: &mut isize, c: &mut isize, orientation: &mut Orientation) {
                 return;
             }
             if *r >= 50 && *r <= 99 {
-                *c = 0 + *r % 50;
+                *c = *r % 50;
                 *r = 100;
                 *orientation = Orientation::Down;
                 return;
@@ -399,7 +389,6 @@ fn apply_folding(r: &mut isize, c: &mut isize, orientation: &mut Orientation) {
                 *c = 50 + *r % 50;
                 *r = 0;
                 *orientation = Orientation::Down;
-                return;
             }
         }
         Orientation::Up => {
@@ -416,10 +405,9 @@ fn apply_folding(r: &mut isize, c: &mut isize, orientation: &mut Orientation) {
                 return;
             }
             if *c >= 100 && *c <= 149 {
-                *c = 0 + *c % 50;
+                *c %= 50;
                 *r = 199;
                 *orientation = Orientation::Up;
-                return;
             }
         }
     }
@@ -453,10 +441,10 @@ pub fn _p2(s: &str, test_wrapping: bool) -> usize {
     }
 
     let mut val = 0;
-    for c in s.lines().skip(grid.len() + 1).next().unwrap().chars() {
+    for c in s.lines().nth(grid.len() + 1).unwrap().chars() {
         // for c in "10R1L10".chars() {
         match c {
-            c if c <= '9' && c >= '0' => {
+            c if ('0'..='9').contains(&c) => {
                 val = val * 10 + (c as u8 - b'0') as isize
             }
             'R' => {
