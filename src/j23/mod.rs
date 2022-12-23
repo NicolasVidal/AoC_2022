@@ -3,9 +3,24 @@ use smallvec::SmallVec;
 use crate::j23::Cell::*;
 use crate::j23::Direction::*;
 
-const INITIAL_SIZE: usize = 75;
-const OFFSET: usize = 10;
-const SIDE_LENGTH: usize = INITIAL_SIZE + OFFSET * 2;
+const TEST_INITIAL_HEIGHT: usize = 7;
+const TEST_INITIAL_WIDTH: usize = 7;
+const INITIAL_SIZE_HEIGHT: usize = 75;
+const INITIAL_SIZE_WIDTH: usize = 75;
+
+const LEFT_OFFSET: usize = 15;
+const RIGHT_OFFSET: usize = 53;
+const TOP_OFFSET: usize = 14;
+const BOTTOM_OFFSET: usize = 56;
+
+#[allow(unused)]
+const TEST_HEIGHT: usize = TEST_INITIAL_HEIGHT + TOP_OFFSET + BOTTOM_OFFSET;
+
+#[allow(unused)]
+const TEST_WIDTH: usize = TEST_INITIAL_WIDTH + LEFT_OFFSET + RIGHT_OFFSET;
+
+const PROBLEM_HEIGHT: usize = INITIAL_SIZE_HEIGHT + TOP_OFFSET + BOTTOM_OFFSET;
+const PROBLEM_WIDTH: usize = INITIAL_SIZE_WIDTH + LEFT_OFFSET + RIGHT_OFFSET;
 
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
 enum Direction {
@@ -17,8 +32,7 @@ enum Direction {
 
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
 struct Elf {
-    directions: [Direction; 4],
-    wish: Option<(usize, usize)>,
+    wish: Option<(u8, u8)>,
 }
 
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
@@ -27,84 +41,100 @@ enum Cell {
     Elf(Elf),
 }
 
-type GridLine = SmallVec<[Cell; SIDE_LENGTH]>;
-type Grid = SmallVec<[GridLine; SIDE_LENGTH]>;
+type GridLine<const WIDTH: usize> = SmallVec<[Cell; WIDTH]>;
+type Grid<const HEIGHT: usize, const WIDTH: usize> = SmallVec<[GridLine<WIDTH>; HEIGHT]>;
 
-type GridWishLine = SmallVec<[(usize, SmallVec<[(usize, usize); 4]>); SIDE_LENGTH]>;
-type GridWish = SmallVec<[GridWishLine; SIDE_LENGTH]>;
+type GridWishLine<const WIDTH: usize> = SmallVec<[(u8, SmallVec<[(u8, u8); 4]>); WIDTH]>;
+type GridWish<const HEIGHT: usize, const WIDTH: usize> = SmallVec<[GridWishLine<WIDTH>; HEIGHT]>;
 
-fn get_north_neighbours(row: usize, col: usize, grid: &Grid) -> SmallVec<[Cell; 3]> {
+fn get_north_neighbours<const HEIGHT: usize, const WIDTH: usize>(row: usize, col: usize, grid: &Grid<HEIGHT, WIDTH>) -> SmallVec<[Cell; 3]> {
     let mut neighbours: SmallVec<[Cell; 3]> = Default::default();
     if row > 0 {
         if col > 0 {
             neighbours.push(grid[row - 1][col - 1]);
+        } else {
+            panic!();
         }
         neighbours.push(grid[row - 1][col]);
-        if col < SIDE_LENGTH - 1 {
+        if col < (WIDTH - 1) {
             neighbours.push(grid[row - 1][col + 1]);
+        } else {
+            panic!();
         }
     }
     neighbours
 }
 
-fn get_south_neighbours(row: usize, col: usize, grid: &Grid) -> SmallVec<[Cell; 3]> {
+fn get_south_neighbours<const HEIGHT: usize, const WIDTH: usize>(row: usize, col: usize, grid: &Grid<HEIGHT, WIDTH>) -> SmallVec<[Cell; 3]> {
     let mut neighbours: SmallVec<[Cell; 3]> = Default::default();
-    if row < SIDE_LENGTH - 1 {
-        if col < SIDE_LENGTH - 1 {
+    if row < (HEIGHT - 1) {
+        if col < (WIDTH - 1) {
             neighbours.push(grid[row + 1][col + 1]);
+        } else {
+            panic!();
         }
         neighbours.push(grid[row + 1][col]);
         if col > 0 {
             neighbours.push(grid[row + 1][col - 1]);
+        } else {
+            panic!();
         }
     }
     neighbours
 }
 
-fn get_east_neighbours(row: usize, col: usize, grid: &Grid) -> SmallVec<[Cell; 3]> {
+fn get_east_neighbours<const HEIGHT: usize, const WIDTH: usize>(row: usize, col: usize, grid: &Grid<HEIGHT, WIDTH>) -> SmallVec<[Cell; 3]> {
     let mut neighbours: SmallVec<[Cell; 3]> = Default::default();
-    if col < SIDE_LENGTH - 1 {
-        if col > 0 {
+    if col < (WIDTH - 1) {
+        if row > 0 {
             neighbours.push(grid[row - 1][col + 1]);
+        } else {
+            panic!();
         }
         neighbours.push(grid[row][col + 1]);
-        if row < SIDE_LENGTH - 1 {
+        if row < (HEIGHT - 1) {
             neighbours.push(grid[row + 1][col + 1]);
+        } else {
+            panic!();
         }
     }
     neighbours
 }
 
-fn get_west_neighbours(row: usize, col: usize, grid: &Grid) -> SmallVec<[Cell; 3]> {
+fn get_west_neighbours<const HEIGHT: usize, const WIDTH: usize>(row: usize, col: usize, grid: &Grid<HEIGHT, WIDTH>) -> SmallVec<[Cell; 3]> {
     let mut neighbours: SmallVec<[Cell; 3]> = Default::default();
     if col > 0 {
-        if row < SIDE_LENGTH - 1 {
+        if row < (HEIGHT - 1) {
             neighbours.push(grid[row + 1][col - 1]);
+        } else {
+            panic!();
         }
         neighbours.push(grid[row][col - 1]);
-        if col > 0 {
+        if row > 0 {
             neighbours.push(grid[row - 1][col - 1]);
+        } else {
+            panic!();
         }
     }
     neighbours
 }
 
-fn get_all_neighbours_coords(row: usize, col: usize) -> SmallVec<[(usize, usize); 8]> {
+fn get_all_neighbours_coords<const HEIGHT: usize, const WIDTH: usize>(row: usize, col: usize) -> SmallVec<[(usize, usize); 8]> {
     let mut neighbours: SmallVec<[(usize, usize); 8]> = Default::default();
     if row > 0 {
         if col > 0 {
             neighbours.push((row - 1, col - 1));
         }
         neighbours.push((row - 1, col));
-        if col < SIDE_LENGTH - 1 {
+        if col < (WIDTH - 1) {
             neighbours.push((row - 1, col + 1));
         }
     }
-    if col < SIDE_LENGTH - 1 {
+    if col < (WIDTH - 1) {
         neighbours.push((row, col + 1));
     }
-    if row < SIDE_LENGTH - 1 {
-        if col < SIDE_LENGTH - 1 {
+    if row < (HEIGHT - 1) {
+        if col < (WIDTH - 1) {
             neighbours.push((row + 1, col + 1));
         }
         neighbours.push((row + 1, col));
@@ -118,13 +148,14 @@ fn get_all_neighbours_coords(row: usize, col: usize) -> SmallVec<[(usize, usize)
     neighbours
 }
 
-fn update_wishes(grid_wishes: &mut GridWish, grid: &mut Grid, directions: &[Direction; 4]) {
-    for row in 0..(SIDE_LENGTH - 1) {
-        for col in 0..(SIDE_LENGTH - 1) {
+fn update_wishes<const HEIGHT: usize, const WIDTH: usize>(grid_wishes: &mut GridWish<HEIGHT, WIDTH>, grid: &mut Grid<HEIGHT, WIDTH>, directions: &[Direction; 4]) -> bool {
+    let mut wishes_changed = false;
+    for row in 0..HEIGHT {
+        for col in 0..WIDTH {
             match grid[row][col] {
                 Empty => {}
                 Elf(mut elf) => {
-                    if get_all_neighbours_coords(row, col).into_iter().all(|(r, c)|
+                    if get_all_neighbours_coords::<HEIGHT, WIDTH>(row, col).into_iter().all(|(r, c)|
                         grid[r][c] == Empty
                     ) {
                         continue;
@@ -146,11 +177,8 @@ fn update_wishes(grid_wishes: &mut GridWish, grid: &mut Grid, directions: &[Dire
                                 East => { (row, col + 1) }
                             };
                             grid_wishes[wished_row][wished_col].0 += 1;
-                            grid_wishes[wished_row][wished_col].1.push((row, col));
-                            // dbg!(dir.clone());
-                            // let start_pos = elf.directions.iter().find_position(|d| **d == *dir).unwrap().0;
-                            // dbg!(elf.directions);
-                            elf.wish = Some((wished_row, wished_col));
+                            grid_wishes[wished_row][wished_col].1.push((row as u8, col as u8));
+                            elf.wish = Some((wished_row as u8, wished_col as u8));
                             grid[row][col] = Elf(elf);
                         }
                     }
@@ -158,12 +186,13 @@ fn update_wishes(grid_wishes: &mut GridWish, grid: &mut Grid, directions: &[Dire
             }
         }
     }
-    for row in 0..(SIDE_LENGTH - 1) {
-        for col in 0..(SIDE_LENGTH - 1) {
+
+    for row in 0..HEIGHT {
+        for col in 0..WIDTH {
             match &grid_wishes[row][col] {
                 (v, elves) if *v > 1 => {
                     for (n_row, n_col) in elves.iter() {
-                        match &mut grid[*n_row][*n_col] {
+                        match &mut grid[*n_row as usize][*n_col as usize] {
                             Empty => { panic!() }
                             Elf(elf) => {
                                 elf.wish = None;
@@ -171,10 +200,14 @@ fn update_wishes(grid_wishes: &mut GridWish, grid: &mut Grid, directions: &[Dire
                         }
                     }
                 }
+                (v, _) if *v == 1 => {
+                    wishes_changed = true;
+                }
                 _ => {}
             }
         }
     }
+    wishes_changed
 }
 
 fn update_global_directions(directions: &mut [Direction; 4]) {
@@ -184,15 +217,15 @@ fn update_global_directions(directions: &mut [Direction; 4]) {
     }
 }
 
-fn update_positions(grid: &mut Grid) {
-    for row in 0..SIDE_LENGTH {
-        for col in 0..SIDE_LENGTH {
+fn update_positions<const HEIGHT: usize, const WIDTH: usize>(grid: &mut Grid<HEIGHT, WIDTH>) {
+    for row in 0..HEIGHT {
+        for col in 0..WIDTH {
             match grid[row][col] {
                 Empty => {}
                 Elf(mut elf) => {
                     if let Some((wished_row, wished_col)) = elf.wish {
                         elf.wish = None;
-                        grid[wished_row][wished_col] = Elf(elf);
+                        grid[wished_row as usize][wished_col as usize] = Elf(elf);
                         grid[row][col] = Empty
                     }
                 }
@@ -201,68 +234,30 @@ fn update_positions(grid: &mut Grid) {
     }
 }
 
-fn clear_wishes(grid_wishes: &mut GridWish) {
-    for row in 0..SIDE_LENGTH {
-        for col in 0..SIDE_LENGTH {
+fn clear_wishes<const HEIGHT: usize, const WIDTH: usize>(grid_wishes: &mut GridWish<HEIGHT, WIDTH>) {
+    for row in 0..HEIGHT {
+        for col in 0..WIDTH {
             grid_wishes[row][col] = (0, Default::default());
         }
     }
 }
 
 #[allow(unused)]
-pub fn _p1(s: &str) -> usize {
-    let mut grid: Grid = Default::default();
-    let mut grid_wish: GridWish = Default::default();
+pub fn _p1<const HEIGHT: usize, const WIDTH: usize>(s: &str) -> usize {
+    let mut grid: Grid<HEIGHT, WIDTH> = Default::default();
+    let mut grid_wish: GridWish<HEIGHT, WIDTH> = Default::default();
 
-    for row in 0..SIDE_LENGTH {
-        grid_wish.push(Default::default());
-        for col in 0..SIDE_LENGTH {
-            grid_wish[row].push((0, Default::default()));
-        }
-    }
+    create_grid_wish(&mut grid_wish);
 
-    for row in 0..OFFSET {
-        grid.push(Default::default());
-        for _ in 0..SIDE_LENGTH {
-            grid[row].push(Empty);
-        }
-    }
-    for (row, line) in s.lines().enumerate() {
-        grid.push(Default::default());
-        for _ in 0..OFFSET {
-            grid[row + OFFSET].push(Empty);
-        }
-        for (col, c) in line.chars().enumerate() {
-            grid[row + OFFSET].push(match c {
-                '.' => Empty,
-                '#' => Elf(Elf {
-                    wish: None,
-                    directions: [North, South, West, East],
-                }),
-                _ => panic!()
-            });
-        }
-        for _ in 0..OFFSET {
-            grid[row + OFFSET].push(Empty);
-        }
-    }
-    for row in 0..OFFSET {
-        grid.push(Default::default());
-        for _ in 0..SIDE_LENGTH {
-            grid[row + SIDE_LENGTH - OFFSET].push(Empty);
-        }
-    }
+    create_grid(s, &mut grid);
 
     let mut directions = [North, South, West, East];
 
-    // print_grid(&grid);
     for _ in 0..10 {
         update_wishes(&mut grid_wish, &mut grid, &directions);
         update_positions(&mut grid);
-        // print_grid_wishes(&grid_wish);
         update_global_directions(&mut directions);
         clear_wishes(&mut grid_wish);
-        // print_grid(&grid);
     }
 
     let mut min_row = usize::MAX;
@@ -270,9 +265,9 @@ pub fn _p1(s: &str) -> usize {
     let mut max_row = 0;
     let mut max_col = 0;
 
-    for row in 0..SIDE_LENGTH {
-        for col in 0..SIDE_LENGTH {
-            match grid[row][col] {
+    for (row, line) in grid.iter().enumerate() {
+        for (col, c) in line.iter().enumerate() {
+            match c {
                 Empty => {}
                 Elf(_) => {
                     min_row = min_row.min(row);
@@ -288,11 +283,11 @@ pub fn _p1(s: &str) -> usize {
 }
 
 #[allow(unused)]
-fn print_grid_wishes(grid_wish: &GridWish) {
-    for r in 0..SIDE_LENGTH {
-        for c in 0..SIDE_LENGTH {
-            print!("{}", match grid_wish[r][c] {
-                (e, _) if e > 0 => e.to_string(),
+fn print_grid_wishes<const HEIGHT: usize, const WIDTH: usize>(grid_wish: &GridWish<HEIGHT, WIDTH>) {
+    for r in grid_wish.iter() {
+        for (c, _) in r.iter() {
+            print!("{}", match *c {
+                e if e > 0 => e.to_string(),
                 _ => '.'.to_string(),
             });
         }
@@ -302,10 +297,10 @@ fn print_grid_wishes(grid_wish: &GridWish) {
 }
 
 #[allow(unused)]
-fn print_grid(grid: &Grid) {
-    for r in 0..SIDE_LENGTH {
-        for c in 0..SIDE_LENGTH {
-            print!("{}", match grid[r][c] {
+fn print_grid<const HEIGHT: usize, const WIDTH: usize>(grid: &Grid<HEIGHT, WIDTH>) {
+    for r in grid.iter() {
+        for c in r.iter() {
+            print!("{}", match c {
                 Empty => { '.' }
                 Elf(_) => { '#' }
             });
@@ -315,11 +310,11 @@ fn print_grid(grid: &Grid) {
     println!();
 }
 
-fn count_elves(grid: &Grid) -> usize {
+fn count_elves<const HEIGHT: usize, const WIDTH: usize>(grid: &Grid<HEIGHT, WIDTH>) -> usize {
     let mut total = 0usize;
-    for r in 0..SIDE_LENGTH {
-        for c in 0..SIDE_LENGTH {
-            match grid[r][c] {
+    for r in grid.iter() {
+        for c in r.iter() {
+            match c {
                 Empty => {}
                 Elf(_) => { total += 1 }
             }
@@ -330,18 +325,77 @@ fn count_elves(grid: &Grid) -> usize {
 
 #[allow(unused)]
 pub fn p1() -> usize {
-    _p1(include_str!("j23.txt"))
+    _p1::<PROBLEM_HEIGHT, PROBLEM_WIDTH>(include_str!("j23.txt"))
 }
 
 #[allow(unused)]
-pub fn _p2(s: &str) -> usize {
-    for line in s.lines() {}
-    42
+pub fn _p2<const HEIGHT: usize, const WIDTH: usize>(s: &str) -> usize {
+    let mut grid: Grid<HEIGHT, WIDTH> = Default::default();
+    let mut grid_wish: GridWish<HEIGHT, WIDTH> = Default::default();
+
+    create_grid_wish(&mut grid_wish);
+
+    create_grid(s, &mut grid);
+
+    let mut directions = [North, South, West, East];
+
+    for id in 0.. {
+        if !update_wishes(&mut grid_wish, &mut grid, &directions) {
+            return id + 1;
+        }
+        update_positions(&mut grid);
+        update_global_directions(&mut directions);
+        clear_wishes(&mut grid_wish);
+    }
+    panic!()
+}
+
+fn create_grid<const HEIGHT: usize, const WIDTH: usize>(s: &str, grid: &mut Grid<HEIGHT, WIDTH>) {
+    for row in 0..TOP_OFFSET {
+        grid.push(Default::default());
+        for _ in 0..WIDTH {
+            grid[row].push(Empty);
+        }
+    }
+    for (row, line) in s.lines().enumerate() {
+        grid.push(Default::default());
+        for _ in 0..LEFT_OFFSET {
+            grid[row + TOP_OFFSET].push(Empty);
+        }
+        for c in line.chars() {
+            grid[row + TOP_OFFSET].push(match c {
+                '.' => Empty,
+                '#' => Elf(Elf {
+                    wish: None,
+                }),
+                _ => panic!()
+            });
+        }
+        for _ in 0..RIGHT_OFFSET {
+            grid[row + TOP_OFFSET].push(Empty);
+        }
+    }
+    let init_size = grid.len();
+    for row in 0..BOTTOM_OFFSET {
+        grid.push(Default::default());
+        for _ in 0..WIDTH {
+            grid[row + init_size].push(Empty);
+        }
+    }
+}
+
+fn create_grid_wish<const HEIGHT: usize, const WIDTH: usize>(grid_wish: &mut GridWish<HEIGHT, WIDTH>) {
+    for row in 0..HEIGHT {
+        grid_wish.push(Default::default());
+        for _ in 0..WIDTH {
+            grid_wish[row].push((0, Default::default()));
+        }
+    }
 }
 
 #[allow(unused)]
 pub fn p2() -> usize {
-    _p2(include_str!("j23.txt"))
+    _p2::<PROBLEM_HEIGHT, PROBLEM_WIDTH>(include_str!("j23.txt"))
 }
 
 #[cfg(test)]
@@ -353,15 +407,14 @@ mod j23_tests {
     #[test]
     #[allow(unused)]
     fn test_p1() {
-        // assert_eq!(42, _p1(include_str!("j23_small_test.txt")));
-        // assert_eq!(110, _p1(include_str!("j23_test.txt")));
-        assert_eq!(4249, _p1(include_str!("j23.txt")));
+        assert_eq!(110, _p1::<TEST_HEIGHT, TEST_WIDTH>(include_str!("j23_test.txt")));
+        assert_eq!(4249, _p1::<PROBLEM_HEIGHT, PROBLEM_WIDTH>(include_str!("j23.txt")));
     }
 
     #[test]
     #[allow(unused)]
     fn test_p2() {
-        assert_eq!(42, _p2(include_str!("j23_test.txt")));
-        assert_eq!(42, _p2(include_str!("j23.txt")));
+        assert_eq!(20, _p2::<TEST_HEIGHT, TEST_WIDTH>(include_str!("j23_test.txt")));
+        assert_eq!(980, _p2::<PROBLEM_HEIGHT, PROBLEM_WIDTH>(include_str!("j23.txt")));
     }
 }
