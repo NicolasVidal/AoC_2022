@@ -1,3 +1,4 @@
+mod j23;
 mod j22;
 mod j21;
 mod j20;
@@ -186,5 +187,10 @@ fn main() {
     println!("{}", j22::p1());
     println!("p2");
     println!("{}", j22::p2());
+    println!("J23 -----------------------------------------------------");
+    println!("p1");
+    println!("{}", j23::p1());
+    println!("p2");
+    println!("{}", j23::p2());
     AllocationRegistry::disable_tracking();
 }
