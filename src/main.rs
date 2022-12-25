@@ -1,3 +1,4 @@
+mod j25;
 mod j24;
 mod j23;
 mod j22;
@@ -23,7 +24,6 @@ mod j3;
 mod j2;
 mod j1;
 
-extern crate core;
 
 use std::alloc::System;
 
@@ -193,10 +193,15 @@ fn main() {
     println!("{}", j23::p1());
     println!("p2");
     println!("{}", j23::p2());
+    AllocationRegistry::disable_tracking();
     println!("J24 -----------------------------------------------------");
     println!("p1");
     println!("{}", j24::p1());
     println!("p2");
     println!("{}", j24::p2());
+    AllocationRegistry::enable_tracking();
+    println!("J25 -----------------------------------------------------");
+    println!("p1");
+    println!("{}", j25::p1());
     AllocationRegistry::disable_tracking();
 }

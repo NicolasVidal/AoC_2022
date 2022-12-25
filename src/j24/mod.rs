@@ -130,9 +130,8 @@ fn compute_graph_and_edges(s: &str) -> (usize, usize, usize, Vec<Vec<Edge>>) {
     }
 
     for p in 0..(periodicity + 1) {
-        for row in 0..rows {
-            for col in 0..cols {
-                let cell = &grid[row][col];
+        for (row, grid_row) in grid.iter().enumerate().take(rows) {
+            for (col, cell) in grid_row.iter().enumerate().take(cols) {
                 if cell.blocked {
                     world[p][row][col] = false;
                 }
