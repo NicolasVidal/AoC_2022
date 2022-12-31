@@ -68,6 +68,7 @@ impl Snafu {
         result
     }
 
+    #[allow(unused)]
     pub fn from_random<R: Rng + ?Sized>(rng: &mut R) -> Snafu {
         let mut snafu = Snafu::default();
         for _ in 0..snafu.0.capacity() {
@@ -76,6 +77,7 @@ impl Snafu {
         snafu
     }
 
+    #[allow(unused)]
     pub fn trim(&mut self) {
         while let Some(elt) = self.0.last() {
             if *elt != Zero {
@@ -85,13 +87,39 @@ impl Snafu {
         }
     }
 
-
+    #[allow(unused)]
     pub fn trim_self(mut self) -> Self {
         self.trim();
         self
     }
+
+    pub fn from_positive_decimal(mut decimal_number: isize) -> Self {
+        let mut snafu = Snafu::default();
+        assert!(decimal_number >= 0);
+        while decimal_number > 0 {
+            let remainder = decimal_number % 5;
+            snafu.0.push(match remainder {
+                0 => Zero,
+                1 => One,
+                2 => Two,
+                3 => {
+                    decimal_number += 5;
+                    DoubleMinus
+                }
+                4 => {
+                    decimal_number += 5;
+                    Minus
+                }
+                _ => { panic!() }
+            });
+            decimal_number /= 5;
+        }
+
+        snafu
+    }
 }
 
+#[allow(unused)]
 pub fn genetic_algorithm(total: isize) -> Snafu {
     const POP_SIZE: usize = 2000;
     const MUTATION_RATE: f32 = 0.4f32;
@@ -180,7 +208,7 @@ pub fn _p1(s: &str) -> Snafu {
     for line in s.lines() {
         total += Snafu::from_str(line).to_decimal();
     }
-    genetic_algorithm(total).trim_self()
+    Snafu::from_positive_decimal(total)
 }
 
 #[allow(unused)]

@@ -23,6 +23,7 @@ tracking-allocator = "0.4.0"
 timeit = "0.1.2"
 tqdm = "0.4.2"
 rand_xoshiro = "0.6.0"
+vec-collections = "0.4.3"
 
 [[bin]]
 name = "produce_timings"

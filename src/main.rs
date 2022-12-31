@@ -193,13 +193,11 @@ fn main() {
     println!("{}", j23::p1());
     println!("p2");
     println!("{}", j23::p2());
-    AllocationRegistry::disable_tracking();
     println!("J24 -----------------------------------------------------");
     println!("p1");
     println!("{}", j24::p1());
     println!("p2");
     println!("{}", j24::p2());
-    AllocationRegistry::enable_tracking();
     println!("J25 -----------------------------------------------------");
     println!("p1");
     println!("{}", j25::p1());
